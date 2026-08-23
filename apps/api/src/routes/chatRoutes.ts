@@ -7,8 +7,8 @@ const chatController = new ChatController();
 
 router.use(authenticate as any);
 
-router.get('/conversations', (req: any, res) => chatController.getConversations(req, res));
-router.get('/conversations/:id/messages', (req: any, res) => chatController.getMessages(req, res));
-router.post('/conversations/:id/messages', (req: any, res) => chatController.sendMessage(req, res));
+router.get('/', (req: any, res) => chatController.getConversations(req, res));
+router.get('/:id/messages', (req: any, res) => chatController.getMessages(req, res));
+router.post('/:id/messages', (req: any, res) => chatController.sendMessage(req, res));
 
 export default router;
