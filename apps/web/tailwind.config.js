@@ -9,19 +9,24 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: '#090d16',
-        surface: '#111827',
-        surfaceBorder: '#1f293d',
+        background: 'var(--color-bg)',
+        surface: 'var(--color-surface)',
+        surfaceBorder: 'var(--color-border)',
+        textMain: 'var(--color-text-main)',
+        textMuted: 'var(--color-text-muted)',
         primary: {
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
+          50: '#f8fafc',
+          100: '#f1f5f9',
+          500: '#334155',
+          600: '#1e293b',
+          700: '#0f172a',
+          800: '#020617',
         },
-        cyan: {
-          400: '#22d3ee',
-          500: '#06b6d4',
+        accent: {
+          blue: '#3b82f6',
+          indigo: '#6366f1',
+          emerald: '#10b981',
+          amber: '#f59e0b',
         },
       },
     },

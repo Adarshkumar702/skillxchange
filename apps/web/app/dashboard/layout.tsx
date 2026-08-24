@@ -4,6 +4,7 @@ import React from 'react';
 import { Navbar } from '../../components/navbar';
 import { Sidebar } from '../../components/sidebar';
 import { Footer } from '../../components/footer';
+import { AIWidget } from '../../components/ai-widget';
 import { useAuth } from '../../lib/authContext';
 import { useRouter } from 'next/navigation';
 
@@ -15,8 +16,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
-          <p className="text-xs text-slate-400 font-medium">Loading SkillXchange Workspace...</p>
+          <div className="w-9 h-9 border-3 border-slate-400 border-t-slate-900 rounded-full animate-spin" />
+          <p className="text-xs text-textMuted font-medium">Loading Workspace...</p>
         </div>
       </div>
     );
@@ -38,6 +39,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
+      <AIWidget />
       <Footer />
     </div>
   );
