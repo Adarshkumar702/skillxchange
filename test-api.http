@@ -1,0 +1,50 @@
+### SkillXchange API Testing via VS Code REST Client / Thunder Client
+
+### 1. Health Check
+GET http://localhost:5000/health
+
+### 2. Login as Student (Alex Morgan)
+# @name login
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "student@example.com",
+  "password": "password123"
+}
+
+### Store Access Token from Response
+@token = {{login.response.body.data.accessToken}}
+
+### 3. Get User Profile
+GET http://localhost:5000/api/users/profile
+Authorization: Bearer {{token}}
+
+### 4. Fetch All Skills Catalog
+GET http://localhost:5000/api/skills
+
+### 5. Get AI/Algorithm Skill Matches
+GET http://localhost:5000/api/matches/recommended
+Authorization: Bearer {{token}}
+
+### 6. AI Skill Gap Analysis
+POST http://localhost:5000/api/ai/analyze-skill-gap
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "targetRoleTitle": "Full Stack Developer"
+}
+
+### 7. AI Career Chat Assistant
+POST http://localhost:5000/api/ai/chat
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "message": "What skills should I learn to become a backend developer?"
+}
+
+### 8. Get Placement Readiness Score
+GET http://localhost:5000/api/placement/readiness
+Authorization: Bearer {{token}}
