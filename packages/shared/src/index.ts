@@ -67,6 +67,7 @@ export const ProfileUpdateSchema = z.object({
   linkedinUrl: z.string().url().or(z.literal('')).optional(),
   portfolioUrl: z.string().url().or(z.literal('')).optional(),
   availability: z.string().optional(),
+  avatarUrl: z.string().optional(),
 });
 
 export const UserSkillSchema = z.object({
