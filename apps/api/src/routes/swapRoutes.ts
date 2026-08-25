@@ -13,6 +13,8 @@ router.post('/', validateBody(CreateSwapRequestSchema), (req: any, res) => swapC
 router.get('/', (req: any, res) => swapController.getSwaps(req, res));
 router.put('/:id/accept', (req: any, res) => swapController.acceptSwap(req, res));
 router.put('/:id/reject', (req: any, res) => swapController.rejectSwap(req, res));
+router.put('/:id/cancel', (req: any, res) => swapController.cancelSwap(req, res));
+router.delete('/:id', (req: any, res) => swapController.deleteSwap(req, res));
 router.put('/:id/complete', (req: any, res) => swapController.completeSwap(req, res));
 
 export default router;

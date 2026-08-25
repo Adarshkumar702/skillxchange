@@ -162,6 +162,33 @@ export class SwapService {
     return updated;
   }
 
+  public async cancelSwapRequest(userId: string, swapId: string) {
+    const swap = await prisma.swapRequest.findUnique({ where: { id: swapId } });
+    if (!swap || (swap.senderId !== userId && swap.receiverId !== userId)) {
+      throw new Error('Swap request not found or unauthorized');
+    }
+
+    const updated = await prisma.swapRequest.update({
+      where: { id: swapId },
+      data: { status: SwapStatus.CANCELLED },
+    });
+
+    return updated;
+  }
+
+  public async deleteSwapRequest(userId: string, swapId: string) {
+    const swap = await prisma.swapRequest.findUnique({ where: { id: swapId } });
+    if (!swap || (swap.senderId !== userId && swap.receiverId !== userId)) {
+      throw new Error('Swap request not found or unauthorized');
+    }
+
+    await prisma.swapRequest.delete({
+      where: { id: swapId },
+    });
+
+    return { success: true };
+  }
+
   public async completeSwapExchange(userId: string, swapId: string) {
     const swap = await prisma.swapRequest.findUnique({
       where: { id: swapId },
