@@ -13,9 +13,7 @@ import {
   Sparkles,
   ArrowRight,
   Star,
-  CheckCircle,
   Clock,
-  BookOpen,
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -53,15 +51,15 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Welcome Banner */}
-      <div className="glass-panel p-6 rounded-2xl border border-indigo-500/20 bg-gradient-to-r from-indigo-950/40 via-surface to-background flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-xl">
+      <div className="glass-panel p-6 rounded-2xl border border-slate-300 dark:border-surfaceBorder flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-semibold">
+          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-indigo-400 text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5" /> Welcome Back
           </div>
-          <h1 className="text-2xl font-extrabold text-white">
+          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">
             Hello, {user?.profile?.fullName || 'Developer'}! 👋
           </h1>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs font-medium text-slate-600 dark:text-slate-400">
             {user?.profile?.university} • {user?.profile?.course} ({user?.profile?.graduationYear})
           </p>
         </div>
@@ -70,7 +68,7 @@ export default function DashboardPage() {
           <Link href="/dashboard/discover" className="btn-primary text-xs font-semibold flex items-center gap-1.5">
             <Compass className="w-4 h-4" /> Find Matches
           </Link>
-          <Link href="/dashboard/profile" className="px-3 py-2 rounded-lg bg-surface border border-surfaceBorder text-xs text-slate-300 hover:text-white transition-colors">
+          <Link href="/dashboard/profile" className="px-3 py-2 rounded-lg bg-surface border border-surfaceBorder text-xs text-textMain hover:border-slate-400 transition-colors shadow-sm">
             Manage Skills
           </Link>
         </div>
@@ -79,39 +77,39 @@ export default function DashboardPage() {
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="glass-card p-4 rounded-xl space-y-1">
-          <div className="flex justify-between items-center text-slate-400 text-xs">
+          <div className="flex justify-between items-center text-textMuted text-xs font-semibold">
             <span>Reputation Score</span>
-            <Star className="w-4 h-4 text-amber-400" />
+            <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
           </div>
-          <p className="text-2xl font-bold text-white">{user?.profile?.reputationScore || 5.0} / 5.0</p>
-          <p className="text-[11px] text-slate-400">{user?.profile?.completedExchanges || 0} completed swaps</p>
+          <p className="text-2xl font-extrabold text-slate-900 dark:text-white">{user?.profile?.reputationScore || 5.0} / 5.0</p>
+          <p className="text-[11px] font-medium text-textMuted">{user?.profile?.completedExchanges || 0} completed swaps</p>
         </div>
 
         <div className="glass-card p-4 rounded-xl space-y-1">
-          <div className="flex justify-between items-center text-slate-400 text-xs">
+          <div className="flex justify-between items-center text-textMuted text-xs font-semibold">
             <span>Placement Readiness</span>
-            <Target className="w-4 h-4 text-cyan-400" />
+            <Target className="w-4 h-4 text-blue-500" />
           </div>
-          <p className="text-2xl font-bold text-cyan-300">{placement?.overallScore || 75}%</p>
-          <p className="text-[11px] text-slate-400">{placement?.careerRole?.title || 'Full Stack Developer'}</p>
+          <p className="text-2xl font-extrabold text-blue-600 dark:text-cyan-300">{placement?.overallScore || 75}%</p>
+          <p className="text-[11px] font-medium text-textMuted">{placement?.careerRole?.title || 'Full Stack Developer'}</p>
         </div>
 
         <div className="glass-card p-4 rounded-xl space-y-1">
-          <div className="flex justify-between items-center text-slate-400 text-xs">
+          <div className="flex justify-between items-center text-textMuted text-xs font-semibold">
             <span>Active Exchanges</span>
-            <Repeat className="w-4 h-4 text-indigo-400" />
+            <Repeat className="w-4 h-4 text-indigo-500" />
           </div>
-          <p className="text-2xl font-bold text-indigo-300">{activeSwaps.length}</p>
-          <p className="text-[11px] text-slate-400">In-progress learning</p>
+          <p className="text-2xl font-extrabold text-indigo-600 dark:text-indigo-300">{activeSwaps.length}</p>
+          <p className="text-[11px] font-medium text-textMuted">In-progress learning</p>
         </div>
 
         <div className="glass-card p-4 rounded-xl space-y-1">
-          <div className="flex justify-between items-center text-slate-400 text-xs">
+          <div className="flex justify-between items-center text-textMuted text-xs font-semibold">
             <span>Upcoming Sessions</span>
-            <Calendar className="w-4 h-4 text-emerald-400" />
+            <Calendar className="w-4 h-4 text-emerald-500" />
           </div>
-          <p className="text-2xl font-bold text-emerald-300">{sessions.length}</p>
-          <p className="text-[11px] text-slate-400">Scheduled 1-on-1 calls</p>
+          <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-300">{sessions.length}</p>
+          <p className="text-[11px] font-medium text-textMuted">Scheduled 1-on-1 calls</p>
         </div>
       </div>
 
@@ -123,12 +121,12 @@ export default function DashboardPage() {
           <div className="glass-panel p-6 rounded-2xl border border-surfaceBorder space-y-4">
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Compass className="w-5 h-5 text-indigo-400" /> Top Compatible Skill Matches
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Compass className="w-5 h-5 text-blue-500" /> Top Compatible Skill Matches
                 </h2>
-                <p className="text-xs text-slate-400">AI-computed compatibility based on reciprocal skills & university.</p>
+                <p className="text-xs font-medium text-textMuted">AI-computed compatibility based on reciprocal skills & university.</p>
               </div>
-              <Link href="/dashboard/discover" className="text-xs text-indigo-400 font-semibold hover:underline flex items-center gap-1">
+              <Link href="/dashboard/discover" className="text-xs text-blue-600 dark:text-indigo-400 font-bold hover:underline flex items-center gap-1">
                 View All <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -141,27 +139,29 @@ export default function DashboardPage() {
                       <img
                         src={match.user.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Demo'}
                         alt="Avatar"
-                        className="w-8 h-8 rounded-full border border-indigo-400"
+                        className="w-8 h-8 rounded-full border border-slate-400"
                       />
                       <div>
-                        <p className="text-xs font-bold text-white">{match.user.fullName}</p>
-                        <p className="text-[11px] text-slate-400 truncate max-w-[120px]">{match.user.university}</p>
+                        <p className="text-xs font-bold text-slate-900 dark:text-white">{match.user.fullName}</p>
+                        <p className="text-[11px] font-medium text-textMuted truncate max-w-[120px]">{match.user.university}</p>
                       </div>
                     </div>
-                    <span className="text-xs font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span className="text-xs font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                       {match.compatibilityScore}% Match
                     </span>
                   </div>
 
-                  <p className="text-xs text-slate-300 line-clamp-2">
+                  <p className="text-xs font-medium text-slate-700 dark:text-slate-300 line-clamp-2">
                     💡 {match.explanations[0] || 'Compatible skill background.'}
                   </p>
 
-                  <div className="flex justify-between items-center pt-2 border-t border-surfaceBorder/60">
-                    <span className="text-[11px] text-slate-400">★ {match.user.reputationScore}</span>
+                  <div className="flex justify-between items-center pt-2 border-t border-surfaceBorder">
+                    <span className="text-[11px] font-bold text-amber-500 flex items-center gap-1">
+                      <Star className="w-3.5 h-3.5 fill-amber-400" /> {match.user.reputationScore}
+                    </span>
                     <Link
                       href={`/dashboard/discover`}
-                      className="text-xs font-semibold text-indigo-400 hover:text-indigo-300"
+                      className="text-xs font-bold text-blue-600 dark:text-indigo-400 hover:underline"
                     >
                       Connect & Swap →
                     </Link>
@@ -174,17 +174,17 @@ export default function DashboardPage() {
           {/* Active Exchanges */}
           <div className="glass-panel p-6 rounded-2xl border border-surfaceBorder space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Repeat className="w-5 h-5 text-cyan-400" /> Active Skill Exchanges
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Repeat className="w-5 h-5 text-blue-500" /> Active Skill Exchanges
               </h2>
-              <Link href="/dashboard/swaps" className="text-xs text-indigo-400 font-semibold hover:underline">
+              <Link href="/dashboard/swaps" className="text-xs text-blue-600 dark:text-indigo-400 font-bold hover:underline">
                 Manage Swaps
               </Link>
             </div>
 
             {activeSwaps.length === 0 ? (
-              <div className="p-8 text-center border border-dashed border-surfaceBorder rounded-xl space-y-2">
-                <p className="text-xs text-slate-400">No active exchanges in progress.</p>
+              <div className="p-8 text-center border border-dashed border-slate-300 dark:border-surfaceBorder rounded-xl space-y-2">
+                <p className="text-xs font-medium text-textMuted">No active exchanges in progress.</p>
                 <Link href="/dashboard/discover" className="btn-primary inline-block text-xs">
                   Discover Peers to Swap
                 </Link>
@@ -195,21 +195,21 @@ export default function DashboardPage() {
                   <div key={swap.id} className="glass-card p-4 rounded-xl flex items-center justify-between gap-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-white">
+                        <span className="text-xs font-bold text-slate-900 dark:text-white">
                           Teach {swap.offeredSkill.name} ↔ Learn {swap.requestedSkill.name}
                         </span>
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-indigo-400 border border-blue-500/20">
                           {swap.learningProgress?.percentage || 0}% Progress
                         </span>
                       </div>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs font-medium text-textMuted">
                         Partner: {swap.sender.profile?.fullName === user?.profile?.fullName ? swap.receiver.profile?.fullName : swap.sender.profile?.fullName}
                       </p>
                     </div>
 
                     <Link
                       href={`/dashboard/chat?conversationId=${swap.conversation?.id}`}
-                      className="px-3 py-1.5 rounded-lg bg-surface border border-surfaceBorder text-xs text-white hover:border-indigo-500"
+                      className="px-3 py-1.5 rounded-lg bg-surface border border-surfaceBorder text-xs font-semibold text-textMain hover:border-slate-400 shadow-sm"
                     >
                       Open Chat
                     </Link>
@@ -223,12 +223,12 @@ export default function DashboardPage() {
         {/* Right Column: AI Assistant Quick Action & Upcoming Sessions */}
         <div className="space-y-6">
           {/* AI Career Assistant Prompt */}
-          <div className="glass-panel p-6 rounded-2xl border border-indigo-500/30 bg-gradient-to-b from-indigo-950/30 to-surface space-y-4">
-            <div className="flex items-center gap-2 text-indigo-400">
+          <div className="glass-panel p-6 rounded-2xl border border-slate-300 dark:border-surfaceBorder space-y-4 shadow-sm">
+            <div className="flex items-center gap-2 text-blue-600 dark:text-indigo-400">
               <Sparkles className="w-5 h-5" />
-              <h3 className="font-bold text-white text-sm">AI Career Assistant</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm">AI Career Assistant</h3>
             </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
+            <p className="text-xs font-medium text-slate-700 dark:text-slate-300 leading-relaxed">
               Ask AI about personalized skill roadmaps, placement preparation strategies, or missing backend/frontend competencies!
             </p>
             <Link
@@ -242,22 +242,22 @@ export default function DashboardPage() {
           {/* Upcoming Sessions */}
           <div className="glass-panel p-6 rounded-2xl border border-surfaceBorder space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                <Clock className="w-4 h-4 text-emerald-400" /> Upcoming Sessions
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                <Clock className="w-4 h-4 text-emerald-500" /> Upcoming Sessions
               </h3>
-              <Link href="/dashboard/sessions" className="text-xs text-indigo-400 hover:underline">
+              <Link href="/dashboard/sessions" className="text-xs text-blue-600 dark:text-indigo-400 font-bold hover:underline">
                 Schedule
               </Link>
             </div>
 
             {sessions.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-4">No scheduled learning sessions.</p>
+              <p className="text-xs font-medium text-textMuted text-center py-4">No scheduled learning sessions.</p>
             ) : (
               <div className="space-y-3">
                 {sessions.slice(0, 3).map((sess: any) => (
                   <div key={sess.id} className="p-3 rounded-lg bg-surface border border-surfaceBorder space-y-1">
-                    <p className="text-xs font-bold text-white">{sess.title}</p>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">{sess.title}</p>
+                    <p className="text-[11px] font-medium text-textMuted">
                       {new Date(sess.scheduledAt).toLocaleString()} ({sess.durationMinutes} mins)
                     </p>
                     {sess.meetingUrl && (
@@ -265,7 +265,7 @@ export default function DashboardPage() {
                         href={sess.meetingUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[11px] text-cyan-400 font-semibold hover:underline block pt-1"
+                        className="text-[11px] text-blue-600 dark:text-cyan-400 font-bold hover:underline block pt-1"
                       >
                         Join Video Call →
                       </a>
