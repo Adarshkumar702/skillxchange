@@ -3,19 +3,23 @@
 @tailwind utilities;
 
 :root {
-  --color-bg: #f8fafc;
-  --color-surface: #ffffff;
-  --color-border: #e2e8f0;
-  --color-text-main: #0f172a;
-  --color-text-muted: #64748b;
+  /* Light Mode Grey Theme */
+  --color-bg: #e5e7eb; /* Neutral slate grey background */
+  --color-surface: #ffffff; /* Crisp white card surface */
+  --color-surface-hover: #f9fafb;
+  --color-border: #d1d5db; /* Subtle grey border */
+  --color-text-main: #111827; /* Dark slate text */
+  --color-text-muted: #6b7280; /* Neutral grey muted text */
 }
 
 .dark {
-  --color-bg: #090d16;
-  --color-surface: #111827;
-  --color-border: #1f293d;
-  --color-text-main: #f8fafc;
-  --color-text-muted: #94a3b8;
+  /* Dark Mode Grey Theme */
+  --color-bg: #111827; /* Deep neutral grey background */
+  --color-surface: #1f2937; /* Elevated dark grey card surface */
+  --color-surface-hover: #374151;
+  --color-border: #374151; /* Dark grey border */
+  --color-text-main: #f9fafb; /* Off-white text */
+  --color-text-muted: #9ca3af; /* Cool grey muted text */
 }
 
 body {
@@ -26,51 +30,53 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Minimalist Slate Panels & Cards */
+/* Elevated Grey Panels & Cards */
 .glass-panel {
-  background: var(--color-surface);
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
 
 .glass-card {
-  background: var(--color-surface);
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   transition: all 0.2s ease-in-out;
 }
 
 .glass-card:hover {
-  border-color: #94a3b8;
+  border-color: #6b7280;
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
 }
 
 .dark .glass-card:hover {
-  border-color: #475569;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+  border-color: #4b5563;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
 }
 
-/* Professional Slate Buttons */
+/* Polished Grey Buttons */
 .btn-primary {
-  background-color: #0f172a;
+  background-color: #111827;
   color: #ffffff;
-  font-weight: 500;
+  font-weight: 600;
   border-radius: 0.5rem;
   padding: 0.625rem 1.25rem;
   transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .btn-primary:hover {
-  background-color: #1e293b;
+  background-color: #1f2937;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .dark .btn-primary {
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: #f9fafb;
+  color: #111827;
 }
 
 .dark .btn-primary:hover {
-  background-color: #e2e8f0;
+  background-color: #e5e7eb;
 }
 
 /* Custom Scrollbar */

@@ -46,10 +46,10 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="w-64 glass-panel border-r border-surfaceBorder hidden lg:block p-4 space-y-6 flex-shrink-0 min-h-[calc(100vh-73px)]">
+    <aside className="w-64 glass-panel border-r border-surfaceBorder hidden lg:block p-4 space-y-6 flex-shrink-0 min-h-[calc(100vh-65px)]">
       <div className="space-y-1">
-        <p className="px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-          Menu Navigation
+        <p className="px-3 text-[10px] font-bold text-textMuted uppercase tracking-wider mb-2">
+          Navigation
         </p>
         {links.map((link) => {
           const Icon = link.icon;
@@ -59,13 +59,13 @@ export function Sidebar() {
             <Link
               key={link.href}
               href={link.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all ${
                 isActive
-                  ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shadow-md shadow-indigo-500/10'
-                  : 'text-slate-300 hover:bg-surface hover:text-white'
-              } ${link.highlight && !isActive ? 'text-cyan-300 bg-cyan-500/10 border border-cyan-500/20' : ''}`}
+                  ? 'bg-grey-900 text-white dark:bg-grey-100 dark:text-grey-900 shadow-sm'
+                  : 'text-textMuted hover:bg-surfaceHover hover:text-textMain'
+              } ${link.highlight && !isActive ? 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border border-blue-500/20' : ''}`}
             >
-              <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-400' : link.highlight ? 'text-cyan-400' : 'text-slate-400'}`} />
+              <Icon className={`w-4 h-4 ${isActive ? (pathname === link.href ? 'text-current' : '') : link.highlight ? 'text-blue-500' : 'text-textMuted'}`} />
               <span>{link.name}</span>
             </Link>
           );
