@@ -4,12 +4,14 @@ import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { fetchApi } from '../../../lib/apiClient';
 import { useAuth } from '../../../lib/authContext';
-import { Compass, Search, Star, Repeat, GraduationCap, CheckCircle, Zap, Shield } from 'lucide-react';
+import { Compass, Search, Star, Repeat, GraduationCap, CheckCircle, Zap, Shield, Share2, Copy, Check } from 'lucide-react';
 
 export default function DiscoverPage() {
   const { user } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
   const [universityFilter, setUniversityFilter] = useState('');
   const [minRatingFilter, setMinRatingFilter] = useState(0);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // Send Swap Request Modal State
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
@@ -19,11 +21,12 @@ export default function DiscoverPage() {
   const [swapError, setSwapError] = useState('');
   const [swapSuccess, setSwapSuccess] = useState('');
 
-  // Fetch Recommended Matches
+  // Fetch Recommended Matches with Search & Filters
   const { data: matchesRes, isLoading } = useQuery({
-    queryKey: ['recommendedMatches', universityFilter, minRatingFilter],
+    queryKey: ['recommendedMatches', searchQuery, universityFilter, minRatingFilter],
     queryFn: () => {
       let query = '/matches/recommended?';
+      if (searchQuery) query += `search=${encodeURIComponent(searchQuery)}&`;
       if (universityFilter) query += `university=${encodeURIComponent(universityFilter)}&`;
       if (minRatingFilter > 0) query += `minRating=${minRatingFilter}&`;
       return fetchApi(query);
@@ -60,34 +63,65 @@ export default function DiscoverPage() {
     });
   };
 
+  const handleCopyProfileLink = () => {
+    const link = `${window.location.origin}/dashboard/discover?search=${encodeURIComponent(user?.profile?.fullName || '')}`;
+    navigator.clipboard.writeText(link);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
   const userTeachingSkills = user?.skills?.filter((s: any) => s.type === 'TEACHING') || [];
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="glass-panel p-6 rounded-2xl border border-surfaceBorder space-y-4">
-        <div>
-          <h1 className="text-xl font-extrabold text-textMain flex items-center gap-2">
-            <Compass className="w-5 h-5 text-blue-500" /> Discover Mentors & Skill Swap Partners
-          </h1>
-          <p className="text-xs text-textMuted">
-            Minimalist Slate Discovery Engine — Real-time reciprocal skill matching & student mentor profiles.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-extrabold text-textMain flex items-center gap-2">
+              <Compass className="w-5 h-5 text-blue-500" /> Discover Mentors & Friends
+            </h1>
+            <p className="text-xs text-textMuted">
+              Search peers by Name, Email, or University and send instant skill swap requests.
+            </p>
+          </div>
+
+          <button
+            onClick={handleCopyProfileLink}
+            className="btn-primary text-xs font-semibold px-4 py-2 flex items-center gap-1.5 self-start sm:self-auto"
+          >
+            {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
+            {copiedLink ? 'Link Copied!' : 'Share My Profile Link'}
+          </button>
         </div>
 
-        {/* Filters */}
+        {/* Search & Filters */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+          {/* Main Name / Email Search Input */}
           <div className="relative">
             <Search className="w-4 h-4 text-textMuted absolute left-3 top-2.5" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 rounded-lg bg-surface border border-surfaceBorder text-xs text-textMain focus:outline-none focus:border-slate-400"
+              placeholder="Search by Name or Email (e.g. Alex, Sarah)..."
+            />
+          </div>
+
+          {/* University Filter */}
+          <div className="relative">
+            <GraduationCap className="w-4 h-4 text-textMuted absolute left-3 top-2.5" />
             <input
               type="text"
               value={universityFilter}
               onChange={(e) => setUniversityFilter(e.target.value)}
               className="w-full pl-9 pr-3 py-2 rounded-lg bg-surface border border-surfaceBorder text-xs text-textMain focus:outline-none focus:border-slate-400"
-              placeholder="Filter by University..."
+              placeholder="Filter by University (e.g. Stanford)..."
             />
           </div>
 
+          {/* Rating Filter */}
           <div>
             <select
               value={minRatingFilter}
@@ -102,7 +136,7 @@ export default function DiscoverPage() {
         </div>
       </div>
 
-      {/* Candidate Cards Grid with Enhanced Design */}
+      {/* Candidate Cards Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
@@ -116,15 +150,15 @@ export default function DiscoverPage() {
       ) : matches.length === 0 ? (
         <div className="glass-panel p-12 rounded-2xl text-center space-y-3">
           <Compass className="w-10 h-10 text-textMuted mx-auto" />
-          <h3 className="text-base font-bold text-textMain">No Matches Found</h3>
-          <p className="text-xs text-textMuted">Try adjusting your filters or adding skills to your profile.</p>
+          <h3 className="text-base font-bold text-textMain">No Peers Found</h3>
+          <p className="text-xs text-textMuted">No user matched your search term "{searchQuery}". Try searching by a different name or email.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {matches.map((match: any) => (
             <div key={match.user.id} className="glass-card p-6 rounded-2xl space-y-5 flex flex-col justify-between relative overflow-hidden">
               <div className="space-y-4">
-                {/* Header with Larger Avatar & Badge */}
+                {/* Header with Avatar & Badge */}
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3.5">
                     <div className="relative">

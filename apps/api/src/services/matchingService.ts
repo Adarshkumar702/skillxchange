@@ -30,6 +30,7 @@ export class MatchingService {
       university?: string;
       skillId?: string;
       minRating?: number;
+      search?: string;
     }
   ): Promise<MatchRecommendation[]> {
     // 1. Fetch current user with skills and profile
@@ -73,6 +74,16 @@ export class MatchingService {
       },
       take: 100,
     });
+
+    if (filters?.search) {
+      const q = filters.search.trim().toLowerCase();
+      candidates = candidates.filter((c) =>
+        (c.profile?.fullName || '').toLowerCase().includes(q) ||
+        c.email.toLowerCase().includes(q) ||
+        (c.profile?.university || '').toLowerCase().includes(q) ||
+        (c.profile?.course || '').toLowerCase().includes(q)
+      );
+    }
 
     if (filters?.minRating) {
       candidates = candidates.filter((c) => (c.profile?.reputationScore || 0) >= filters.minRating!);

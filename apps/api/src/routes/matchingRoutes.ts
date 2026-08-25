@@ -11,11 +11,13 @@ router.use(authenticate as any);
 router.get('/recommended', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const university = req.query.university as string | undefined;
+    const search = req.query.search as string | undefined;
     const skillId = req.query.skillId as string | undefined;
     const minRating = req.query.minRating ? parseFloat(req.query.minRating as string) : undefined;
 
     const matches = await matchingService.getMatchesForUser(req.user!.userId, 20, {
       university,
+      search,
       skillId,
       minRating,
     });
