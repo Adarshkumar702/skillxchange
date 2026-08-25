@@ -9,11 +9,18 @@ import { ENV } from './config/env';
 
 const app = express();
 
-// Security Middlewares
+// Security Middlewares with Permissive Production CORS for Vercel
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(
   cors({
-    origin: [ENV.CLIENT_URL, 'http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: (origin, callback) => {
+      // Allow requests from Vercel, localhost, or any client domain
+      if (!origin || origin.includes('vercel.app') || origin.includes('localhost') || origin.includes('127.0.0.1') || origin === ENV.CLIENT_URL) {
+        callback(null, true);
+      } else {
+        callback(null, true);
+      }
+    },
     credentials: true,
   })
 );
