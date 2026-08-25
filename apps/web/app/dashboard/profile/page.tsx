@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchApi } from '../../../lib/apiClient';
 import { useAuth } from '../../../lib/authContext';
-import { User, Plus, Trash2, Github, Linkedin, Globe, MapPin, GraduationCap, Award, Star, Check, Upload, Camera } from 'lucide-react';
+import { User, Plus, Trash2, Github, Linkedin, MapPin, GraduationCap, Award, Star, Check, Upload, Camera, X, Maximize2 } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth();
@@ -16,6 +16,9 @@ export default function ProfilePage() {
   const [githubUrl, setGithubUrl] = useState(user?.profile?.githubUrl || '');
   const [linkedinUrl, setLinkedinUrl] = useState(user?.profile?.linkedinUrl || '');
   const [avatarUrl, setAvatarUrl] = useState(user?.profile?.avatarUrl || '');
+
+  // Enlarge Picture Lightbox Modal State
+  const [showImageModal, setShowImageModal] = useState(false);
 
   // Add Skill Modal State
   const [showSkillModal, setShowSkillModal] = useState(false);
@@ -62,8 +65,8 @@ export default function ProfilePage() {
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert('Please choose an image file under 2MB.');
+      if (file.size > 3 * 1024 * 1024) {
+        alert('Please choose an image file under 3MB.');
         return;
       }
       const reader = new FileReader();
@@ -88,6 +91,7 @@ export default function ProfilePage() {
   const userSkills = user?.skills || [];
   const teachingSkills = userSkills.filter((s: any) => s.type === 'TEACHING');
   const learningSkills = userSkills.filter((s: any) => s.type === 'LEARNING');
+  const currentAvatar = avatarUrl || user?.profile?.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User';
 
   return (
     <div className="space-y-8">
@@ -95,26 +99,17 @@ export default function ProfilePage() {
       <div className="glass-panel p-8 rounded-2xl border border-surfaceBorder space-y-6 relative overflow-hidden">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
-            <div className="relative group">
+            {/* Clickable Profile Avatar to Open Enlarged Lightbox */}
+            <div className="relative group cursor-pointer" onClick={() => setShowImageModal(true)}>
               <img
-                src={avatarUrl || user?.profile?.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User'}
+                src={currentAvatar}
                 alt="Avatar"
-                className="w-24 h-24 rounded-2xl border-2 border-indigo-500 shadow-xl object-cover"
+                className="w-24 h-24 rounded-2xl border-2 border-indigo-500 shadow-xl object-cover transition-transform group-hover:scale-105"
               />
-              <label
-                htmlFor="avatar-upload"
-                className="absolute inset-0 bg-slate-900/60 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity text-white text-xs font-semibold gap-1"
-              >
-                <Camera className="w-5 h-5 text-indigo-400" />
-                Change
-              </label>
-              <input
-                id="avatar-upload"
-                type="file"
-                accept="image/*"
-                onChange={handleImageFileChange}
-                className="hidden"
-              />
+              <div className="absolute inset-0 bg-slate-900/60 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs font-semibold gap-1">
+                <Maximize2 className="w-5 h-5 text-indigo-400" />
+                Enlarge
+              </div>
             </div>
 
             <div className="space-y-1">
@@ -151,47 +146,39 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Bio & Links */}
+        {/* Bio & Links Edit Form */}
         {isEditing ? (
           <form onSubmit={handleSaveProfile} className="space-y-4 pt-4 border-t border-surfaceBorder">
-            {/* Avatar Picture Upload Section */}
+            {/* Clean Profile Picture Upload Section (Without Raw Link Input Box) */}
             <div className="p-4 rounded-xl bg-slate-100 dark:bg-slate-900 border border-surfaceBorder space-y-3">
               <label className="block text-xs font-bold text-textMain flex items-center gap-2">
-                <Upload className="w-4 h-4 text-blue-500" /> Profile Picture / Avatar
+                <Upload className="w-4 h-4 text-blue-500" /> Change Profile Picture
               </label>
 
-              <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="flex items-center gap-4">
                 <img
-                  src={avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User'}
+                  src={currentAvatar}
                   alt="Preview"
-                  className="w-16 h-16 rounded-xl border border-slate-300 dark:border-slate-700 object-cover shadow-sm"
+                  className="w-16 h-16 rounded-xl border border-slate-300 dark:border-slate-700 object-cover shadow-sm cursor-pointer hover:opacity-80"
+                  onClick={() => setShowImageModal(true)}
+                  title="Click to preview enlarged picture"
                 />
 
-                <div className="flex-1 space-y-2 w-full">
-                  <div className="flex items-center gap-2">
-                    <label
-                      htmlFor="avatar-file-input"
-                      className="px-3.5 py-1.5 rounded-lg bg-surface border border-surfaceBorder text-xs font-semibold text-textMain hover:border-slate-400 cursor-pointer shadow-sm flex items-center gap-1.5"
-                    >
-                      <Camera className="w-3.5 h-3.5 text-blue-500" /> Upload Image File
-                    </label>
-                    <input
-                      id="avatar-file-input"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageFileChange}
-                      className="hidden"
-                    />
-                    <span className="text-[11px] text-textMuted">Supports JPG, PNG, GIF (max 2MB)</span>
-                  </div>
-
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="avatar-file-input"
+                    className="px-4 py-2 rounded-lg bg-surface border border-surfaceBorder text-xs font-semibold text-textMain hover:border-slate-400 cursor-pointer shadow-sm inline-flex items-center gap-2 transition-all"
+                  >
+                    <Camera className="w-4 h-4 text-blue-500" /> Choose New Photo
+                  </label>
                   <input
-                    type="text"
-                    value={avatarUrl}
-                    onChange={(e) => setAvatarUrl(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-surface border border-surfaceBorder text-xs text-textMain focus:outline-none focus:border-slate-400"
-                    placeholder="Or paste image URL (https://...)"
+                    id="avatar-file-input"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageFileChange}
+                    className="hidden"
                   />
+                  <p className="text-[11px] text-textMuted">Supports PNG, JPG, GIF (Max 3MB)</p>
                 </div>
               </div>
             </div>
@@ -345,6 +332,27 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Enlarged Photo Lightbox Modal */}
+      {showImageModal && (
+        <div className="fixed inset-0 z-50 glass-panel bg-background/90 flex items-center justify-center p-4 animate-in fade-in">
+          <div className="relative max-w-xl w-full flex flex-col items-center">
+            <button
+              onClick={() => setShowImageModal(false)}
+              className="absolute -top-12 right-0 p-2 rounded-full bg-surface border border-surfaceBorder text-textMain hover:bg-slate-800 transition-colors"
+              title="Close"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <img
+              src={currentAvatar}
+              alt="Enlarged Profile Photo"
+              className="max-h-[80vh] w-auto rounded-2xl border-2 border-indigo-500 shadow-2xl object-contain bg-surface"
+            />
+            <p className="text-xs font-semibold text-textMuted pt-3">{user?.profile?.fullName}'s Profile Photo</p>
+          </div>
+        </div>
+      )}
 
       {/* Add Skill Modal */}
       {showSkillModal && (
