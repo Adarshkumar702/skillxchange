@@ -11,6 +11,9 @@ export class SessionService {
       throw new Error('Unauthorized or invalid swap request');
     }
 
+    const cleanSwapId = input.swapRequestId.replace(/[^a-zA-Z0-9]/g, '');
+    const defaultMeetingUrl = `https://meet.jit.si/SkillXchangeClassroom_${cleanSwapId}#config.prejoinPageEnabled=false&config.enableLobby=false&config.startWithAudioMuted=false&config.disableDeepLinking=true`;
+
     const session = await prisma.learningSession.create({
       data: {
         swapRequestId: input.swapRequestId,
@@ -19,7 +22,7 @@ export class SessionService {
         description: input.description,
         scheduledAt: new Date(input.scheduledAt),
         durationMinutes: input.durationMinutes,
-        meetingUrl: input.meetingUrl || `https://meet.jit.si/skillxchange-${input.swapRequestId.slice(0, 8)}`,
+        meetingUrl: input.meetingUrl || defaultMeetingUrl,
         status: SessionStatus.SCHEDULED,
       },
       include: { createdBy: { select: { profile: true } } },

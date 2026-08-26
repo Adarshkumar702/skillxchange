@@ -3,9 +3,11 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchApi } from '../../../lib/apiClient';
-import { Calendar, Plus, Video, Clock, CheckCircle, ExternalLink, X, Monitor, Mic, VideoOff } from 'lucide-react';
+import { useAuth } from '../../../lib/authContext';
+import { Calendar, Plus, Video, Clock, CheckCircle, ExternalLink, X, ShieldCheck } from 'lucide-react';
 
 export default function SessionsPage() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [swapRequestId, setSwapRequestId] = useState('');
@@ -64,6 +66,17 @@ export default function SessionsPage() {
     });
   };
 
+  const getCleanVideoUrl = (rawUrl: string) => {
+    if (!rawUrl) return '';
+    const displayName = encodeURIComponent(user?.profile?.fullName || 'Student');
+    if (rawUrl.includes('meet.jit.si')) {
+      // Append config to bypass lobby & prejoin and pass user display name directly
+      const baseUrl = rawUrl.split('#')[0];
+      return `${baseUrl}#userInfo.displayName="${displayName}"&config.prejoinPageEnabled=false&config.enableLobby=false&config.startWithAudioMuted=false&config.disableDeepLinking=true`;
+    }
+    return rawUrl;
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -73,7 +86,7 @@ export default function SessionsPage() {
             <Calendar className="w-5 h-5 text-emerald-500" /> 1-on-1 Live Video Teaching Sessions
           </h1>
           <p className="text-xs text-textMuted">
-            Schedule live HD video calls with screen sharing (like Google Meet & Zoom) to teach code live.
+            Instant HD video rooms with live screen sharing. No lobby or password required.
           </p>
         </div>
 
@@ -124,6 +137,9 @@ export default function SessionsPage() {
                     <Clock className="w-3.5 h-3.5 text-blue-500" />
                     {new Date(sess.scheduledAt).toLocaleString()} ({sess.durationMinutes} mins)
                   </p>
+                  <p className="flex items-center gap-1.5 text-[11px] text-emerald-500 font-semibold">
+                    <ShieldCheck className="w-3.5 h-3.5" /> Instant Open Access (No Moderator Lock)
+                  </p>
                 </div>
               </div>
 
@@ -136,16 +152,16 @@ export default function SessionsPage() {
                       onClick={() => setActiveVideoCall(sess)}
                       className="btn-primary text-xs font-semibold px-4 py-2 flex items-center gap-2 justify-center shadow-md"
                     >
-                      <Video className="w-4 h-4 text-emerald-400" /> Join Live Video Call
+                      <Video className="w-4 h-4 text-emerald-400" /> Join Instant Video Call
                     </button>
 
                     {/* External Link Option */}
                     <a
-                      href={sess.meetingUrl}
+                      href={getCleanVideoUrl(sess.meetingUrl)}
                       target="_blank"
                       rel="noreferrer"
                       className="p-2 rounded-lg bg-surface border border-surfaceBorder text-textMuted hover:text-textMain transition-colors"
-                      title="Open in new window (Google Meet / Zoom / Jitsi)"
+                      title="Open in new browser tab (Google Meet / Zoom / Jitsi)"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
@@ -168,7 +184,7 @@ export default function SessionsPage() {
         </div>
       )}
 
-      {/* Embedded Live Video Call Room Modal (Google Meet / Zoom / Jitsi Style) */}
+      {/* Embedded Live Video Call Room Modal (Instant Entrance without Lobby) */}
       {activeVideoCall && (
         <div className="fixed inset-0 z-50 glass-panel bg-background/95 flex flex-col p-4 animate-in fade-in">
           {/* Top Video Header */}
@@ -179,7 +195,9 @@ export default function SessionsPage() {
                 <h3 className="text-sm font-extrabold text-textMain flex items-center gap-2">
                   <Video className="w-4 h-4 text-emerald-500" /> {activeVideoCall.title} (Live Session)
                 </h3>
-                <p className="text-[11px] text-textMuted">Screen Sharing & HD Audio Enabled • SkillXchange Classroom</p>
+                <p className="text-[11px] text-textMuted">
+                  Student: {user?.profile?.fullName || 'User'} • Open Access (No Moderator Approval Required)
+                </p>
               </div>
             </div>
 
@@ -194,7 +212,7 @@ export default function SessionsPage() {
           {/* Embedded WebRTC Video Iframe */}
           <div className="flex-1 rounded-2xl overflow-hidden border border-surfaceBorder bg-black shadow-2xl relative">
             <iframe
-              src={activeVideoCall.meetingUrl}
+              src={getCleanVideoUrl(activeVideoCall.meetingUrl)}
               allow="camera; microphone; display-capture; autoplay; clipboard-write"
               className="w-full h-full border-none"
               title="Live SkillXchange Video Teaching Room"
@@ -272,7 +290,7 @@ export default function SessionsPage() {
                   value={customMeetingUrl}
                   onChange={(e) => setCustomMeetingUrl(e.target.value)}
                   className="w-full p-2.5 rounded-lg bg-surface border border-surfaceBorder text-xs text-textMain"
-                  placeholder="https://meet.google.com/abc-defg-hij or leave blank for auto video room"
+                  placeholder="https://meet.google.com/abc-defg-hij or leave blank for instant room"
                 />
               </div>
 
