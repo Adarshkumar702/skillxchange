@@ -34,6 +34,19 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
+// Friendly Root Welcome Endpoint
+app.get('/', (req, res) => {
+  res.status(200).json({
+    name: 'SkillXchange Backend API Server',
+    version: '1.0.0',
+    status: 'running',
+    message: 'Backend API is running. Access the Web Frontend at http://localhost:3000',
+    webAppUrl: 'http://localhost:3000',
+    docsUrl: 'http://localhost:5000/api/docs',
+    healthUrl: 'http://localhost:5000/health',
+  });
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString(), env: ENV.NODE_ENV });
