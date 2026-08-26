@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchApi } from '../../../lib/apiClient';
 import { useAuth } from '../../../lib/authContext';
-import { Calendar, Plus, Video, Clock, CheckCircle, ExternalLink, X, ShieldCheck } from 'lucide-react';
+import { Calendar, Plus, Video, Clock, CheckCircle, ExternalLink, X, ShieldCheck, Monitor } from 'lucide-react';
 
 export default function SessionsPage() {
   const { user } = useAuth();
@@ -17,7 +17,7 @@ export default function SessionsPage() {
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [customMeetingUrl, setCustomMeetingUrl] = useState('');
 
-  // Embedded Video Call Modal State
+  // Video Launcher Modal State
   const [activeVideoCall, setActiveVideoCall] = useState<any>(null);
 
   // Fetch user sessions
@@ -78,6 +78,11 @@ export default function SessionsPage() {
       return `${baseUrl}#userInfo.displayName="${displayName}"&config.prejoinPageEnabled=false&config.startWithAudioMuted=false`;
     }
     return url;
+  };
+
+  const handleJoinCall = (sess: any) => {
+    const finalUrl = getCleanVideoUrl(sess.meetingUrl);
+    window.open(finalUrl, '_blank');
   };
 
   return (
@@ -141,7 +146,7 @@ export default function SessionsPage() {
                     {new Date(sess.scheduledAt).toLocaleString()} ({sess.durationMinutes} mins)
                   </p>
                   <p className="flex items-center gap-1.5 text-[11px] text-emerald-500 font-semibold">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Instant Open Video Access (Zero Login Required)
+                    <ShieldCheck className="w-3.5 h-3.5" /> Instant Open Access (No Moderator Lock)
                   </p>
                 </div>
               </div>
@@ -150,9 +155,9 @@ export default function SessionsPage() {
               <div className="pt-4 border-t border-surfaceBorder flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 {sess.meetingUrl ? (
                   <div className="flex items-center gap-2">
-                    {/* In-App Embedded Video Call Button */}
+                    {/* Direct Launch Video Call Button */}
                     <button
-                      onClick={() => setActiveVideoCall(sess)}
+                      onClick={() => handleJoinCall(sess)}
                       className="btn-primary text-xs font-semibold px-4 py-2 flex items-center gap-2 justify-center shadow-md"
                     >
                       <Video className="w-4 h-4 text-emerald-400" /> Join Live Video Call
@@ -164,7 +169,7 @@ export default function SessionsPage() {
                       target="_blank"
                       rel="noreferrer"
                       className="p-2 rounded-lg bg-surface border border-surfaceBorder text-textMuted hover:text-textMain transition-colors"
-                      title="Open in new browser tab (Google Meet / Zoom / Open WebRTC)"
+                      title="Open in new browser window (Google Meet / Zoom / Open WebRTC)"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
@@ -184,43 +189,6 @@ export default function SessionsPage() {
               </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Embedded Live Video Call Room Modal (Instant Entrance without Moderator Prompt) */}
-      {activeVideoCall && (
-        <div className="fixed inset-0 z-50 glass-panel bg-background/95 flex flex-col p-4 animate-in fade-in">
-          {/* Top Video Header */}
-          <div className="glass-panel p-3 rounded-xl border border-surfaceBorder flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
-              <div>
-                <h3 className="text-sm font-extrabold text-textMain flex items-center gap-2">
-                  <Video className="w-4 h-4 text-emerald-500" /> {activeVideoCall.title} (Live Classroom)
-                </h3>
-                <p className="text-[11px] text-textMuted">
-                  Connected as: {user?.profile?.fullName || 'Student'} • Instant Open Video (Zero Moderator Lock)
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setActiveVideoCall(null)}
-              className="px-4 py-2 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 text-xs font-semibold flex items-center gap-1.5 hover:bg-red-500/20 transition-colors"
-            >
-              <X className="w-4 h-4" /> Leave Video Call
-            </button>
-          </div>
-
-          {/* Embedded WebRTC Video Iframe */}
-          <div className="flex-1 rounded-2xl overflow-hidden border border-surfaceBorder bg-black shadow-2xl relative">
-            <iframe
-              src={getCleanVideoUrl(activeVideoCall.meetingUrl)}
-              allow="camera; microphone; display-capture; autoplay; clipboard-write"
-              className="w-full h-full border-none"
-              title="Live SkillXchange Video Teaching Room"
-            />
-          </div>
         </div>
       )}
 
