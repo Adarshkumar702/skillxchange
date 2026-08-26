@@ -3,8 +3,9 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchApi } from '../../../lib/apiClient';
+import { getSocket } from '../../../lib/socketClient';
 import { useAuth } from '../../../lib/authContext';
-import { Calendar, Plus, Video, Clock, CheckCircle, ExternalLink, X, ShieldCheck, Monitor } from 'lucide-react';
+import { Calendar, Plus, Video, Clock, CheckCircle, ExternalLink, X, ShieldCheck } from 'lucide-react';
 
 export default function SessionsPage() {
   const { user } = useAuth();
@@ -16,9 +17,6 @@ export default function SessionsPage() {
   const [scheduledAt, setScheduledAt] = useState('');
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [customMeetingUrl, setCustomMeetingUrl] = useState('');
-
-  // Video Launcher Modal State
-  const [activeVideoCall, setActiveVideoCall] = useState<any>(null);
 
   // Fetch user sessions
   const { data: sessionsRes, isLoading } = useQuery({
@@ -82,6 +80,26 @@ export default function SessionsPage() {
 
   const handleJoinCall = (sess: any) => {
     const finalUrl = getCleanVideoUrl(sess.meetingUrl);
+
+    // Identify partner to send live incoming call request
+    const partnerId =
+      sess.swapRequest?.senderId === user?.id
+        ? sess.swapRequest?.receiverId
+        : sess.swapRequest?.senderId;
+
+    if (partnerId) {
+      const socket = getSocket();
+      if (socket) {
+        socket.emit('start_video_call', {
+          targetUserId: partnerId,
+          callerName: user?.profile?.fullName || 'Peer Partner',
+          sessionTitle: sess.title,
+          meetingUrl: finalUrl,
+        });
+      }
+    }
+
+    // Open video call natively in dedicated window
     window.open(finalUrl, '_blank');
   };
 
@@ -94,7 +112,7 @@ export default function SessionsPage() {
             <Calendar className="w-5 h-5 text-emerald-500" /> 1-on-1 Live Video Teaching Sessions
           </h1>
           <p className="text-xs text-textMuted">
-            Instant HD video rooms with live screen sharing. No moderator lock or password required.
+            Instant HD video rooms with live screen sharing. Zero moderator lock or password required.
           </p>
         </div>
 
@@ -146,7 +164,7 @@ export default function SessionsPage() {
                     {new Date(sess.scheduledAt).toLocaleString()} ({sess.durationMinutes} mins)
                   </p>
                   <p className="flex items-center gap-1.5 text-[11px] text-emerald-500 font-semibold">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Instant Open Access (No Moderator Lock)
+                    <ShieldCheck className="w-3.5 h-3.5" /> Instant Open Video Access (Broadcast Call to Partner)
                   </p>
                 </div>
               </div>
@@ -155,12 +173,12 @@ export default function SessionsPage() {
               <div className="pt-4 border-t border-surfaceBorder flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 {sess.meetingUrl ? (
                   <div className="flex items-center gap-2">
-                    {/* Direct Launch Video Call Button */}
+                    {/* Direct Launch Video Call & Call Request Push */}
                     <button
                       onClick={() => handleJoinCall(sess)}
                       className="btn-primary text-xs font-semibold px-4 py-2 flex items-center gap-2 justify-center shadow-md"
                     >
-                      <Video className="w-4 h-4 text-emerald-400" /> Join Live Video Call
+                      <Video className="w-4 h-4 text-emerald-400" /> Join Call & Notify Partner
                     </button>
 
                     {/* External Link Option */}

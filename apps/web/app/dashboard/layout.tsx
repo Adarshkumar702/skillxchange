@@ -5,6 +5,7 @@ import { Navbar } from '../../components/navbar';
 import { Sidebar } from '../../components/sidebar';
 import { Footer } from '../../components/footer';
 import { AIWidget } from '../../components/ai-widget';
+import { IncomingCallBanner } from '../../components/incoming-call-banner';
 import { useAuth } from '../../lib/authContext';
 import { useRouter } from 'next/navigation';
 
@@ -33,6 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
+      <IncomingCallBanner />
       <div className="flex-1 flex max-w-7xl w-full mx-auto">
         <Sidebar />
         <main className="flex-1 p-6 overflow-y-auto">

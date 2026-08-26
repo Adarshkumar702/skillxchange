@@ -50,6 +50,18 @@ export function setupSocketIO(io: SocketIOServer) {
       }
     });
 
+    // Real-Time 1-on-1 Video Call Notification Push
+    socket.on('start_video_call', (data: { targetUserId: string; callerName: string; sessionTitle: string; meetingUrl: string }) => {
+      console.log(`Video call started by ${data.callerName} for user ${data.targetUserId}`);
+      // Notify target user's personal room instantly
+      io.to(`user:${data.targetUserId}`).emit('incoming_video_call', {
+        callerId: userId,
+        callerName: data.callerName,
+        sessionTitle: data.sessionTitle,
+        meetingUrl: data.meetingUrl,
+      });
+    });
+
     // Typing Indicators
     socket.on('typing_start', (data: { conversationId: string }) => {
       socket.to(`conversation:${data.conversationId}`).emit('user_typing', { userId, conversationId: data.conversationId });
