@@ -1,4 +1,14 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://skillxchange-api-olgv.onrender.com/api';
+// Determine production HTTPS API base URL
+const getApiBaseUrl = (): string => {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    // If running on Vercel or any live web domain, force production HTTPS Render API
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      return 'https://skillxchange-api-olgv.onrender.com/api';
+    }
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+};
 
 export async function fetchApi<T = any>(
   endpoint: string,
@@ -18,8 +28,10 @@ export async function fetchApi<T = any>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  const apiBase = getApiBaseUrl();
+
   try {
-    const res = await fetch(`${API_BASE}${endpoint}`, {
+    const res = await fetch(`${apiBase}${endpoint}`, {
       ...options,
       headers,
     });
