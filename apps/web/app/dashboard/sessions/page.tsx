@@ -69,12 +69,15 @@ export default function SessionsPage() {
   const getCleanVideoUrl = (rawUrl: string) => {
     if (!rawUrl) return '';
     const displayName = encodeURIComponent(user?.profile?.fullName || 'Student');
-    if (rawUrl.includes('meet.jit.si')) {
-      // Append config to bypass lobby & prejoin and pass user display name directly
-      const baseUrl = rawUrl.split('#')[0];
-      return `${baseUrl}#userInfo.displayName="${displayName}"&config.prejoinPageEnabled=false&config.enableLobby=false&config.startWithAudioMuted=false&config.disableDeepLinking=true`;
+    
+    // Replace meet.jit.si with open WebRTC provider meet.ffmuc.net (no 8x8 moderator lock)
+    let url = rawUrl.replace('meet.jit.si', 'meet.ffmuc.net');
+    
+    if (url.includes('meet.ffmuc.net')) {
+      const baseUrl = url.split('#')[0];
+      return `${baseUrl}#userInfo.displayName="${displayName}"&config.prejoinPageEnabled=false&config.startWithAudioMuted=false`;
     }
-    return rawUrl;
+    return url;
   };
 
   return (
@@ -86,7 +89,7 @@ export default function SessionsPage() {
             <Calendar className="w-5 h-5 text-emerald-500" /> 1-on-1 Live Video Teaching Sessions
           </h1>
           <p className="text-xs text-textMuted">
-            Instant HD video rooms with live screen sharing. No lobby or password required.
+            Instant HD video rooms with live screen sharing. No moderator lock or password required.
           </p>
         </div>
 
@@ -138,7 +141,7 @@ export default function SessionsPage() {
                     {new Date(sess.scheduledAt).toLocaleString()} ({sess.durationMinutes} mins)
                   </p>
                   <p className="flex items-center gap-1.5 text-[11px] text-emerald-500 font-semibold">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Instant Open Access (No Moderator Lock)
+                    <ShieldCheck className="w-3.5 h-3.5" /> Instant Open Video Access (Zero Login Required)
                   </p>
                 </div>
               </div>
@@ -152,7 +155,7 @@ export default function SessionsPage() {
                       onClick={() => setActiveVideoCall(sess)}
                       className="btn-primary text-xs font-semibold px-4 py-2 flex items-center gap-2 justify-center shadow-md"
                     >
-                      <Video className="w-4 h-4 text-emerald-400" /> Join Instant Video Call
+                      <Video className="w-4 h-4 text-emerald-400" /> Join Live Video Call
                     </button>
 
                     {/* External Link Option */}
@@ -161,7 +164,7 @@ export default function SessionsPage() {
                       target="_blank"
                       rel="noreferrer"
                       className="p-2 rounded-lg bg-surface border border-surfaceBorder text-textMuted hover:text-textMain transition-colors"
-                      title="Open in new browser tab (Google Meet / Zoom / Jitsi)"
+                      title="Open in new browser tab (Google Meet / Zoom / Open WebRTC)"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
@@ -184,7 +187,7 @@ export default function SessionsPage() {
         </div>
       )}
 
-      {/* Embedded Live Video Call Room Modal (Instant Entrance without Lobby) */}
+      {/* Embedded Live Video Call Room Modal (Instant Entrance without Moderator Prompt) */}
       {activeVideoCall && (
         <div className="fixed inset-0 z-50 glass-panel bg-background/95 flex flex-col p-4 animate-in fade-in">
           {/* Top Video Header */}
@@ -193,10 +196,10 @@ export default function SessionsPage() {
               <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
               <div>
                 <h3 className="text-sm font-extrabold text-textMain flex items-center gap-2">
-                  <Video className="w-4 h-4 text-emerald-500" /> {activeVideoCall.title} (Live Session)
+                  <Video className="w-4 h-4 text-emerald-500" /> {activeVideoCall.title} (Live Classroom)
                 </h3>
                 <p className="text-[11px] text-textMuted">
-                  Student: {user?.profile?.fullName || 'User'} • Open Access (No Moderator Approval Required)
+                  Connected as: {user?.profile?.fullName || 'Student'} • Instant Open Video (Zero Moderator Lock)
                 </p>
               </div>
             </div>
@@ -255,7 +258,7 @@ export default function SessionsPage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full p-2.5 rounded-lg bg-surface border border-surfaceBorder text-xs text-textMain"
-                  placeholder="e.g. React Hooks Live Code Walkthrough"
+                  placeholder="e.g. PostgreSQL Basics Live Code Walkthrough"
                 />
               </div>
 

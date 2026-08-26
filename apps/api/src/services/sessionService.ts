@@ -12,7 +12,8 @@ export class SessionService {
     }
 
     const cleanSwapId = input.swapRequestId.replace(/[^a-zA-Z0-9]/g, '');
-    const defaultMeetingUrl = `https://meet.jit.si/SkillXchangeClassroom_${cleanSwapId}#config.prejoinPageEnabled=false&config.enableLobby=false&config.startWithAudioMuted=false&config.disableDeepLinking=true`;
+    // Use open WebRTC server meet.ffmuc.net which has zero moderator lock / login enforcement
+    const defaultMeetingUrl = `https://meet.ffmuc.net/SkillXchange_${cleanSwapId}#config.prejoinPageEnabled=false&config.startWithAudioMuted=false`;
 
     const session = await prisma.learningSession.create({
       data: {
