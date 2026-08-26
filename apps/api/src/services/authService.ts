@@ -27,7 +27,10 @@ export class AuthService {
           },
         },
       },
-      include: { profile: true },
+      include: {
+        profile: true,
+        skills: { include: { skill: { include: { category: true } } } },
+      },
     });
 
     // Create default welcome notification
@@ -51,13 +54,26 @@ export class AuthService {
       data: { token: refreshToken, userId: user.id, expiresAt },
     });
 
-    return { user: { id: user.id, email: user.email, role: user.role, profile: user.profile }, accessToken, refreshToken };
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        profile: user.profile,
+        skills: user.skills,
+      },
+      accessToken,
+      refreshToken,
+    };
   }
 
   public async login(input: LoginInput) {
     const user = await prisma.user.findUnique({
       where: { email: input.email },
-      include: { profile: true },
+      include: {
+        profile: true,
+        skills: { include: { skill: { include: { category: true } } } },
+      },
     });
 
     if (!user) {
@@ -78,7 +94,17 @@ export class AuthService {
       data: { token: refreshToken, userId: user.id, expiresAt },
     });
 
-    return { user: { id: user.id, email: user.email, role: user.role, profile: user.profile }, accessToken, refreshToken };
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        profile: user.profile,
+        skills: user.skills,
+      },
+      accessToken,
+      refreshToken,
+    };
   }
 
   public async refreshToken(token: string) {

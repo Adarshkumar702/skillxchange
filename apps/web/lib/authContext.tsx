@@ -63,11 +63,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchCurrentUser();
+
+    // Listen to localStorage changes across browser tabs/windows
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'accessToken') {
+        fetchCurrentUser();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const login = (accessToken: string, userData: User) => {
     localStorage.setItem('accessToken', accessToken);
     setUser(userData);
+    fetchCurrentUser(); // Immediately fetch complete profile with skills
   };
 
   const logout = async () => {
