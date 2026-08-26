@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://skillxchange-api-olgv.onrender.com/api';
 
 export async function fetchApi<T = any>(
   endpoint: string,
@@ -22,7 +22,6 @@ export async function fetchApi<T = any>(
     const res = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
       headers,
-      credentials: 'include',
     });
 
     const body = await res.json();
