@@ -11,6 +11,8 @@ export interface MatchRecommendation {
     graduationYear: number;
     location: string | null;
     bio: string | null;
+    githubUrl: string | null;
+    linkedinUrl: string | null;
     reputationScore: number;
     completedExchanges: number;
     isRealUser: boolean;
@@ -93,7 +95,6 @@ export class MatchingService {
     }
 
     // Identify registered users vs seed sample profiles
-    // Registered users are verified OR have non-seed emails
     const seedEmails = ['student@example.com', 'alex@example.com', 'sarah@example.com', 'david@example.com'];
     const isCandidateRealUser = (c: typeof candidates[0]) => {
       if (c.isVerified) return true;
@@ -104,7 +105,6 @@ export class MatchingService {
     const realCandidates = candidates.filter((c) => isCandidateRealUser(c));
     const demoCandidates = candidates.filter((c) => !isCandidateRealUser(c));
 
-    // If onlyRealUsers filter is enabled OR real registered users exist, prioritize real users
     let finalCandidates = candidates;
     if (filters?.onlyRealUsers) {
       finalCandidates = realCandidates;
@@ -131,42 +131,54 @@ export class MatchingService {
       let matchPoints = 40; // base score
 
       if (isRealUser) {
-        matchPoints += 15; // Bonus for real registered peer
+        matchPoints += 15;
         explanations.push(`Verified Real Student registered on SkillXchange.`);
       }
 
-      // A: Reciprocal Overlap (Candidate teaches what User wants)
+      // Multi-Skill Reciprocal Overlap Calculation
+      const matchingTeachSkillsList: string[] = [];
       let matchedTeachSkill: { id: string; name: string } | undefined;
+
       for (const item of candTeaching) {
         if (currentLearningSkillIds.has(item.skillId)) {
-          matchedTeachSkill = { id: item.skill.id, name: item.skill.name };
-          matchPoints += 30;
-          explanations.push(`${candidate.profile.fullName} teaches ${item.skill.name}, which you want to learn.`);
-          break;
+          if (!matchedTeachSkill) {
+            matchedTeachSkill = { id: item.skill.id, name: item.skill.name };
+          }
+          matchingTeachSkillsList.push(item.skill.name);
+          matchPoints += 25;
         }
       }
 
-      // B: Reciprocal Overlap (User teaches what Candidate wants)
+      const matchingLearnSkillsList: string[] = [];
       let matchedLearnSkill: { id: string; name: string } | undefined;
+
       for (const item of currentTeaching) {
         if (candLearningSkillIds.has(item.skillId)) {
-          matchedLearnSkill = { id: item.skill.id, name: item.skill.name };
+          if (!matchedLearnSkill) {
+            matchedLearnSkill = { id: item.skill.id, name: item.skill.name };
+          }
+          matchingLearnSkillsList.push(item.skill.name);
           matchPoints += 20;
-          explanations.push(`You can teach ${item.skill.name}, which ${candidate.profile.fullName} wants to learn.`);
-          break;
         }
       }
 
-      // If user hasn't added skills yet, provide smart informative match prompts
-      if (currentTeaching.length === 0 && currentLearning.length === 0) {
+      if (matchingTeachSkillsList.length > 0 && matchingLearnSkillsList.length > 0) {
+        explanations.push(
+          `🎯 Exact Reciprocal Match: ${candidate.profile.fullName} teaches ${matchingTeachSkillsList.join(', ')} (which you want to learn) & wants to learn ${matchingLearnSkillsList.join(', ')} (which you teach)!`
+        );
+      } else if (matchingTeachSkillsList.length > 0) {
+        explanations.push(`${candidate.profile.fullName} teaches ${matchingTeachSkillsList.join(', ')}, which matches your learning goals.`);
+      } else if (matchingLearnSkillsList.length > 0) {
+        explanations.push(`You teach ${matchingLearnSkillsList.join(', ')}, which ${candidate.profile.fullName} wants to learn.`);
+      } else if (currentTeaching.length === 0 && currentLearning.length === 0) {
         const topTeach = candTeaching[0]?.skill.name || 'Software Engineering';
         const topLearn = candLearning[0]?.skill.name || 'Coding';
-        matchPoints += 35;
+        matchPoints += 30;
         explanations.push(`${candidate.profile.fullName} teaches ${topTeach} & wants to learn ${topLearn}.`);
-      } else if (explanations.length <= 1) {
+      } else {
         const topTeach = candTeaching[0]?.skill.name || 'Development';
         matchPoints += 15;
-        explanations.push(`${candidate.profile.fullName} teaches ${topTeach}. Add more skills to unlock exact reciprocal match.`);
+        explanations.push(`${candidate.profile.fullName} teaches ${topTeach}. Add skills to your profile for exact reciprocal matching.`);
       }
 
       // C: University bonus
@@ -192,6 +204,8 @@ export class MatchingService {
           graduationYear: candidate.profile.graduationYear,
           location: candidate.profile.location,
           bio: candidate.profile.bio,
+          githubUrl: candidate.profile.githubUrl,
+          linkedinUrl: candidate.profile.linkedinUrl,
           reputationScore: candidate.profile.reputationScore,
           completedExchanges: candidate.profile.completedExchanges,
           isRealUser,
