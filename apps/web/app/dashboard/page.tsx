@@ -145,43 +145,55 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Metrics Row */}
+      {/* Metrics Row - All Cards Are Interactive Links */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="glass-card p-4 rounded-xl space-y-1">
-          <div className="flex justify-between items-center text-textMuted text-xs font-semibold">
+        <Link
+          href="/dashboard/ratings"
+          className="glass-card p-4 rounded-xl space-y-1 hover:border-amber-500/40 transition-all cursor-pointer block group"
+        >
+          <div className="flex justify-between items-center text-textMuted text-xs font-semibold group-hover:text-amber-400">
             <span>Reputation Score</span>
             <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
           </div>
           <p className="text-2xl font-extrabold text-slate-900 dark:text-white">{user?.profile?.reputationScore || 5.0} / 5.0</p>
           <p className="text-[11px] font-medium text-textMuted">{user?.profile?.completedExchanges || 0} completed swaps</p>
-        </div>
+        </Link>
 
-        <div className="glass-card p-4 rounded-xl space-y-1">
-          <div className="flex justify-between items-center text-textMuted text-xs font-semibold">
+        <Link
+          href="/dashboard/placement"
+          className="glass-card p-4 rounded-xl space-y-1 hover:border-blue-500/40 transition-all cursor-pointer block group"
+        >
+          <div className="flex justify-between items-center text-textMuted text-xs font-semibold group-hover:text-blue-400">
             <span>Placement Readiness</span>
             <Target className="w-4 h-4 text-blue-500" />
           </div>
           <p className="text-2xl font-extrabold text-blue-600 dark:text-cyan-300">{placement?.overallScore || 75}%</p>
           <p className="text-[11px] font-medium text-textMuted">{placement?.careerRole?.title || 'Full Stack Developer'}</p>
-        </div>
+        </Link>
 
-        <div className="glass-card p-4 rounded-xl space-y-1">
-          <div className="flex justify-between items-center text-textMuted text-xs font-semibold">
+        <Link
+          href="/dashboard/swaps"
+          className="glass-card p-4 rounded-xl space-y-1 hover:border-indigo-500/40 transition-all cursor-pointer block group"
+        >
+          <div className="flex justify-between items-center text-textMuted text-xs font-semibold group-hover:text-indigo-400">
             <span>Active Exchanges</span>
             <Repeat className="w-4 h-4 text-indigo-500" />
           </div>
           <p className="text-2xl font-extrabold text-indigo-600 dark:text-indigo-300">{activeSwaps.length}</p>
-          <p className="text-[11px] font-medium text-textMuted">In-progress learning</p>
-        </div>
+          <p className="text-[11px] font-medium text-textMuted">In-progress learning →</p>
+        </Link>
 
-        <div className="glass-card p-4 rounded-xl space-y-1">
-          <div className="flex justify-between items-center text-textMuted text-xs font-semibold">
+        <Link
+          href="/dashboard/sessions"
+          className="glass-card p-4 rounded-xl space-y-1 hover:border-emerald-500/40 transition-all cursor-pointer block group"
+        >
+          <div className="flex justify-between items-center text-textMuted text-xs font-semibold group-hover:text-emerald-400">
             <span>Upcoming Sessions</span>
             <Calendar className="w-4 h-4 text-emerald-500" />
           </div>
           <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-300">{sessions.length}</p>
-          <p className="text-[11px] font-medium text-textMuted">Scheduled 1-on-1 calls</p>
-        </div>
+          <p className="text-[11px] font-medium text-textMuted">Scheduled 1-on-1 calls →</p>
+        </Link>
       </div>
 
       {/* Main Content Grid */}
