@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../lib/authContext';
 import { fetchApi } from '../../lib/apiClient';
-import { Sparkles, ArrowRight, Lock, Mail, AlertCircle } from 'lucide-react';
+import { Sparkles, ArrowRight, Lock, Mail, AlertCircle, ShieldCheck } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,14 +15,17 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent, customEmail?: string, customPassword?: string) => {
+    if (e) e.preventDefault();
     setError('');
     setLoading(true);
 
+    const submitEmail = customEmail || email;
+    const submitPassword = customPassword || password;
+
     const res = await fetchApi('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email: submitEmail, password: submitPassword }),
     });
 
     setLoading(false);
@@ -39,6 +42,10 @@ export default function LoginPage() {
     } else {
       setError(res.message || 'Invalid email or password');
     }
+  };
+
+  const handleAdminLogin = () => {
+    handleSubmit(undefined, 'admin@adarsh.com', '1234');
   };
 
   return (
@@ -62,7 +69,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={(e) => handleSubmit(e)} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1.5">Email Address</label>
             <div className="relative">
@@ -102,7 +109,19 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="pt-4 border-t border-surfaceBorder text-center space-y-2 text-xs">
+        {/* Clean Admin Portal Sign-In Button (Without Displaying Credentials Text) */}
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={handleAdminLogin}
+            disabled={loading}
+            className="w-full py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-extrabold text-xs hover:bg-amber-500 hover:text-slate-900 transition-all flex items-center justify-center gap-2 shadow-sm"
+          >
+            <ShieldCheck className="w-4 h-4" /> Sign In as Admin / Project Owner
+          </button>
+        </div>
+
+        <div className="pt-2 border-t border-surfaceBorder text-center space-y-2 text-xs">
           <p className="text-slate-400">
             Don’t have an account?{' '}
             <Link href="/register" className="text-indigo-400 font-semibold hover:underline">
