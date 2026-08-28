@@ -1,5 +1,6 @@
 import { prisma } from '../config/prisma';
 import { SkillType } from '@skillxchange/shared';
+import { deletedUserRegistry } from './adminService';
 
 export interface MatchRecommendation {
   user: {
@@ -80,6 +81,18 @@ export class MatchingService {
       take: 100,
     });
 
+    // Exclude any globally deleted user
+    candidates = candidates.filter((c) => {
+      if (
+        deletedUserRegistry.has(c.id) ||
+        deletedUserRegistry.has(c.email) ||
+        (c.profile?.fullName && deletedUserRegistry.has(c.profile.fullName))
+      ) {
+        return false;
+      }
+      return true;
+    });
+
     if (filters?.search) {
       const q = filters.search.trim().toLowerCase();
       candidates = candidates.filter((c) =>
@@ -98,7 +111,6 @@ export class MatchingService {
     const pureSampleEmails = ['alex@example.com', 'sarah@example.com', 'david@example.com'];
 
     const isCandidateRealUser = (c: typeof candidates[0]) => {
-      // If user is verified in DB or not in static sample list, mark as Real Verified User
       if (c.isVerified === true) return true;
       const cleanEmail = (c.email || '').trim().toLowerCase();
       if (!pureSampleEmails.includes(cleanEmail)) return true;
@@ -231,13 +243,20 @@ export class MatchingService {
       });
     }
 
+    // Filter results to exclude deleted users
+    const filteredResults = results.filter(
+      (r) =>
+        !deletedUserRegistry.has(r.user.id) &&
+        !deletedUserRegistry.has(r.user.fullName)
+    );
+
     // Sort: Real registered users first, then by compatibility score descending
-    results.sort((a, b) => {
+    filteredResults.sort((a, b) => {
       if (a.user.isRealUser && !b.user.isRealUser) return -1;
       if (!a.user.isRealUser && b.user.isRealUser) return 1;
       return b.compatibilityScore - a.compatibilityScore;
     });
 
-    return results.slice(0, limit);
+    return filteredResults.slice(0, limit);
   }
 }

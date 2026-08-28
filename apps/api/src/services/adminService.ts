@@ -1,9 +1,14 @@
 import { prisma } from '../config/prisma';
 import { CreateReportInput, ReportStatus } from '@skillxchange/shared';
 
+// Global In-Memory Deleted Users Registry for real-time exclusion across all candidate endpoints
+export const deletedUserRegistry = new Set<string>();
+
 export class AdminService {
   public async getAnalytics() {
-    const totalUsers = await prisma.user.count();
+    const totalUsers = await prisma.user.count({
+      where: { id: { notIn: Array.from(deletedUserRegistry) } },
+    });
     const totalSkills = await prisma.skill.count();
     const totalSwaps = await prisma.swapRequest.count();
     const completedSwaps = await prisma.swapRequest.count({ where: { status: 'COMPLETED' } });
@@ -14,6 +19,7 @@ export class AdminService {
     });
 
     const recentUsers = await prisma.user.findMany({
+      where: { id: { notIn: Array.from(deletedUserRegistry) } },
       take: 10,
       orderBy: { createdAt: 'desc' },
       include: { profile: true },
@@ -46,7 +52,9 @@ export class AdminService {
   }
 
   public async getUsers(search?: string, page = 1, limit = 50) {
-    const where: any = {};
+    const where: any = {
+      id: { notIn: Array.from(deletedUserRegistry) },
+    };
     if (search) {
       where.OR = [
         { email: { contains: search, mode: 'insensitive' } },
@@ -70,7 +78,21 @@ export class AdminService {
   }
 
   public async deleteUser(userId: string) {
+    deletedUserRegistry.add(userId);
     try {
+      const existingUser = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { profile: true },
+      });
+
+      if (existingUser) {
+        deletedUserRegistry.add(existingUser.id);
+        deletedUserRegistry.add(existingUser.email);
+        if (existingUser.profile?.fullName) {
+          deletedUserRegistry.add(existingUser.profile.fullName);
+        }
+      }
+
       await prisma.userSkill.deleteMany({ where: { userId } });
       await prisma.profile.deleteMany({ where: { userId } });
       await prisma.notification.deleteMany({ where: { userId } });
