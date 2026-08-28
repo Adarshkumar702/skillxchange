@@ -6,10 +6,10 @@ const getApiBaseUrl = (): string => {
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return 'http://localhost:5000/api';
     }
-    // Production Vercel deployment
-    return process.env.NEXT_PUBLIC_API_URL || 'https://skillxchange-api-olgv.onrender.com/api';
+    // Production Vercel deployment - relative route resolves to Next.js API Routes / Render proxy
+    return '/api';
   }
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+  return '/api';
 };
 
 export async function fetchApi<T = any>(

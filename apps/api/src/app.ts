@@ -40,10 +40,9 @@ app.get('/', (req, res) => {
     name: 'SkillXchange Backend API Server',
     version: '1.0.0',
     status: 'running',
-    message: 'Backend API is running. Access the Web Frontend at http://localhost:3000',
-    webAppUrl: 'http://localhost:3000',
-    docsUrl: 'http://localhost:5000/api/docs',
-    healthUrl: 'http://localhost:5000/health',
+    message: 'Backend API is running.',
+    webAppUrl: 'https://skillxchange-web.vercel.app',
+    healthUrl: '/health',
   });
 });
 
@@ -52,8 +51,9 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString(), env: ENV.NODE_ENV });
 });
 
-// Primary API Router
+// Mount Primary API Router under both /api and root / for total compatibility
 app.use('/api', routes);
+app.use('/', routes);
 
 // Centralized Error Handler
 app.use(globalErrorHandler);
