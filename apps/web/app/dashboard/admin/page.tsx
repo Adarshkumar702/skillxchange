@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchApi } from '../../../lib/apiClient';
 import {
@@ -22,7 +22,30 @@ export default function AdminPage() {
   const [userSearch, setUserSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'STUDENT' | 'ADMIN'>('ALL');
   const [removeSuccessMsg, setRemoveSuccessMsg] = useState('');
-  const [removedUserIds, setRemovedUserIds] = useState<string[]>([]);
+  const [deletedUserIds, setDeletedUserIds] = useState<string[]>([]);
+
+  // Load deleted user IDs from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('skillxchange_deleted_users');
+        if (stored) {
+          setDeletedUserIds(JSON.parse(stored));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, []);
+
+  // Save deleted user ID to localStorage
+  const recordDeletedUser = (idOrEmail: string) => {
+    if (typeof window !== 'undefined') {
+      const updated = Array.from(new Set([...deletedUserIds, idOrEmail]));
+      setDeletedUserIds(updated);
+      localStorage.setItem('skillxchange_deleted_users', JSON.stringify(updated));
+    }
+  };
 
   // Fetch admin analytics
   const { data: analyticsRes, isLoading, refetch: refetchAnalytics } = useQuery({
@@ -58,7 +81,7 @@ export default function AdminPage() {
   const deleteUserMutation = useMutation({
     mutationFn: (userId: string) => fetchApi(`/admin/users/${userId}`, { method: 'DELETE' }),
     onSuccess: (_, userId) => {
-      setRemovedUserIds((prev) => [...prev, userId]);
+      recordDeletedUser(userId);
       queryClient.invalidateQueries({ queryKey: ['adminAnalytics'] });
       queryClient.invalidateQueries({ queryKey: ['adminUsersList'] });
       refetchUsers();
@@ -77,6 +100,8 @@ export default function AdminPage() {
       `⚠️ ADMIN SECURITY OVERRIDE\n\nAre you sure you want to permanently delete user "${user.profile?.fullName || user.email}" (${user.email})?\n\nThis will purge their account, profile, skills, and swap history from the server.`
     );
     if (confirmed) {
+      recordDeletedUser(user.id);
+      recordDeletedUser(user.email);
       deleteUserMutation.mutate(user.id);
     }
   };
@@ -149,7 +174,11 @@ export default function AdminPage() {
 
   // Combine and deduplicate users
   const mergedUsers = rawUsersList.length > 0 ? rawUsersList : (candidateUsers.length > 0 ? candidateUsers : defaultRegisteredUsers);
-  const activeUsers = mergedUsers.filter((u: any) => !removedUserIds.includes(u.id));
+  
+  // Exclude any deleted user permanently
+  const activeUsers = mergedUsers.filter(
+    (u: any) => !deletedUserIds.includes(u.id) && !deletedUserIds.includes(u.email)
+  );
 
   // Search and Role Filter
   const filteredUsers = activeUsers.filter((u: any) => {
@@ -164,7 +193,7 @@ export default function AdminPage() {
   });
 
   const reports = reportsRes?.data || [];
-  const totalUserCount = usersRes?.data?.total || activeUsers.length;
+  const totalUserCount = activeUsers.length;
   const activeSwapsCount = swapsRes?.data?.length || 3;
 
   return (
@@ -230,7 +259,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Executive KPI Metric Cards - Skills Catalog Card Removed as Requested */}
+      {/* Executive KPI Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/30 border border-amber-500/20 space-y-2 shadow-lg">
           <div className="flex justify-between items-center text-slate-400 text-xs font-bold">

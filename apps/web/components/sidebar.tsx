@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
@@ -30,6 +30,20 @@ import { useAuth } from '../lib/authContext';
 export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const [deletedUserIds, setDeletedUserIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('skillxchange_deleted_users');
+        if (stored) {
+          setDeletedUserIds(JSON.parse(stored));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, []);
 
   // Fetch admin user creation logs for Admin Sidebar
   const { data: usersRes } = useQuery({
@@ -104,8 +118,9 @@ export function Sidebar() {
   }));
 
   // Merge registered users list with instant fallback
-  const usersList = rawUsersList.length > 0 ? rawUsersList : (candidateUsers.length > 0 ? candidateUsers : defaultRegisteredLogs);
-  const totalUserCount = usersRes?.data?.total || usersList.length;
+  const mergedUsers = rawUsersList.length > 0 ? rawUsersList : (candidateUsers.length > 0 ? candidateUsers : defaultRegisteredLogs);
+  const usersList = mergedUsers.filter((u: any) => !deletedUserIds.includes(u.id) && !deletedUserIds.includes(u.email));
+  const totalUserCount = usersList.length;
 
   // Student Links
   const studentLinks = [

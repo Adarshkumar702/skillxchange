@@ -14,7 +14,7 @@ export class AdminService {
     });
 
     const recentUsers = await prisma.user.findMany({
-      take: 5,
+      take: 10,
       orderBy: { createdAt: 'desc' },
       include: { profile: true },
     });
@@ -45,7 +45,7 @@ export class AdminService {
     };
   }
 
-  public async getUsers(search?: string, page = 1, limit = 20) {
+  public async getUsers(search?: string, page = 1, limit = 50) {
     const where: any = {};
     if (search) {
       where.OR = [
@@ -70,7 +70,16 @@ export class AdminService {
   }
 
   public async deleteUser(userId: string) {
-    await prisma.user.delete({ where: { id: userId } });
+    try {
+      await prisma.userSkill.deleteMany({ where: { userId } });
+      await prisma.profile.deleteMany({ where: { userId } });
+      await prisma.notification.deleteMany({ where: { userId } });
+      await prisma.refreshToken.deleteMany({ where: { userId } });
+      await prisma.swapRequest.deleteMany({ where: { OR: [{ senderId: userId }, { receiverId: userId }] } });
+      await prisma.user.delete({ where: { id: userId } });
+    } catch (e) {
+      console.log('Database user deletion cleanup:', e);
+    }
     return { success: true };
   }
 
