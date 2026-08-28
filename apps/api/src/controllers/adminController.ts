@@ -27,6 +27,15 @@ export class AdminController {
     }
   }
 
+  public async getDeletedUsers(req: Request, res: Response) {
+    try {
+      const list = await adminService.getDeletedUsersList();
+      return sendSuccess(res, 'Deleted users fetched', list);
+    } catch (err: any) {
+      return sendError(res, err.message, [], 400);
+    }
+  }
+
   public async deleteUser(req: AuthenticatedRequest, res: Response) {
     try {
       await adminService.deleteUser(req.params.id);

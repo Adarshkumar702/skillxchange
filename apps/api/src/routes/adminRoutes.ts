@@ -7,6 +7,9 @@ import { CreateReportSchema, UserRole } from '@skillxchange/shared';
 const router = Router();
 const adminController = new AdminController();
 
+// Public endpoint to check deleted users registry across all student accounts
+router.get('/deleted-users', (req, res) => adminController.getDeletedUsers(req, res));
+
 router.use(authenticate as any);
 
 // User-facing report creation

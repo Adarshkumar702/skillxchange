@@ -31,7 +31,7 @@ export default function DiscoverPage() {
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
   const [viewStudentModal, setViewStudentModal] = useState<any>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-  const [deletedUserIds, setDeletedUserIds] = useState<string[]>([]);
+  const [localDeletedUserIds, setLocalDeletedUserIds] = useState<string[]>([]);
 
   const [offeredSkillId, setOfferedSkillId] = useState('');
   const [requestedSkillId, setRequestedSkillId] = useState('');
@@ -46,7 +46,7 @@ export default function DiscoverPage() {
       try {
         const stored = localStorage.getItem('skillxchange_deleted_users');
         if (stored) {
-          setDeletedUserIds(JSON.parse(stored));
+          setLocalDeletedUserIds(JSON.parse(stored));
         }
       } catch (e) {
         console.error(e);
@@ -54,14 +54,23 @@ export default function DiscoverPage() {
     }
   }, []);
 
+  // Fetch deleted users registry from backend server
+  const { data: serverDeletedUsersRes } = useQuery({
+    queryKey: ['serverDeletedUsersRegistry'],
+    queryFn: () => fetchApi('/admin/deleted-users'),
+  });
+
+  const serverDeletedList: string[] = serverDeletedUsersRes?.data || [];
+  const allDeletedUserIds = Array.from(new Set([...localDeletedUserIds, ...serverDeletedList]));
+
   // Helper to check if a user is removed by Admin
   const checkIsRemovedByAdmin = (u: any) => {
     if (!u) return false;
     return (
       u.isDeleted === true ||
-      deletedUserIds.includes(u.id) ||
-      deletedUserIds.includes(u.email) ||
-      deletedUserIds.includes(u.fullName)
+      allDeletedUserIds.includes(u.id) ||
+      allDeletedUserIds.includes(u.email) ||
+      allDeletedUserIds.includes(u.fullName)
     );
   };
 
@@ -255,7 +264,7 @@ export default function DiscoverPage() {
                         {/* Real User vs Sample Demo vs Removed Badge */}
                         {isRemoved ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 mt-1 rounded-full bg-red-500/10 text-red-500 border border-red-500/30">
-                            <UserX className="w-3 h-3 text-red-500" /> Removed by Admin
+                            <UserX className="w-3 h-3 text-red-500" /> Account Removed by Admin
                           </span>
                         ) : verified ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 mt-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
@@ -323,7 +332,7 @@ export default function DiscoverPage() {
                     }}
                     className="btn-primary text-xs font-semibold py-2 px-3.5 flex items-center gap-1.5 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    <Send className="w-3.5 h-3.5" /> {isRemoved ? 'Removed' : 'Quick Swap Request'}
+                    <Send className="w-3.5 h-3.5" /> {isRemoved ? 'Account Removed' : 'Quick Swap Request'}
                   </button>
                 </div>
               </div>

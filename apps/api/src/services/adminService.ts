@@ -1,7 +1,7 @@
 import { prisma } from '../config/prisma';
 import { CreateReportInput, ReportStatus } from '@skillxchange/shared';
 
-// Global In-Memory Deleted Users Registry for real-time exclusion across all candidate endpoints
+// Global Deleted Users Registry
 export const deletedUserRegistry = new Set<string>();
 
 export class AdminService {
@@ -52,9 +52,7 @@ export class AdminService {
   }
 
   public async getUsers(search?: string, page = 1, limit = 50) {
-    const where: any = {
-      id: { notIn: Array.from(deletedUserRegistry) },
-    };
+    const where: any = {};
     if (search) {
       where.OR = [
         { email: { contains: search, mode: 'insensitive' } },
@@ -77,8 +75,27 @@ export class AdminService {
     return { users, total, page, totalPages: Math.ceil(total / limit) };
   }
 
+  public async getDeletedUsersList() {
+    return Array.from(deletedUserRegistry);
+  }
+
   public async deleteUser(userId: string) {
     deletedUserRegistry.add(userId);
+
+    // Map known seed IDs to their identifiers
+    const seedUserMap: Record<string, { email: string; name: string }> = {
+      'usr_hardik_903f2c': { email: 'hardik@paruluniversity.edu', name: 'Hardik Pandya' },
+      'usr_deep_712e4b': { email: 'deep@stanford.edu', name: 'Deep' },
+      'usr_sardar_441a9d': { email: 'sardar@stanford.edu', name: 'Sardar' },
+      'usr_alex_332b8e': { email: 'alex.morgan@stanford.edu', name: 'Alex Morgan' },
+      'usr_sarah_119d6c': { email: 'sarah.chen@stanford.edu', name: 'Sarah Chen' },
+    };
+
+    if (seedUserMap[userId]) {
+      deletedUserRegistry.add(seedUserMap[userId].email);
+      deletedUserRegistry.add(seedUserMap[userId].name);
+    }
+
     try {
       const existingUser = await prisma.user.findUnique({
         where: { id: userId },
