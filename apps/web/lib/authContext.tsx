@@ -96,8 +96,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = (accessToken: string, userData: User) => {
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('loginTimestamp', Date.now().toString());
-    setUser(userData);
-    fetchCurrentUser(); // Immediately sync user skills and profile
+    setUser(userData); // Instant local state update without redundant second HTTP fetch
+    setLoading(false);
   };
 
   const logout = async () => {
