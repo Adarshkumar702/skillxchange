@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchApi } from '../../../lib/apiClient';
 import { getSocket } from '../../../lib/socketClient';
 import { useAuth } from '../../../lib/authContext';
-import { Calendar, Plus, Video, Clock, CheckCircle, ExternalLink, X, ShieldCheck, Lock, Maximize2 } from 'lucide-react';
+import { Calendar, Plus, Video, Clock, CheckCircle, ExternalLink, ShieldCheck, Lock, Copy, Check } from 'lucide-react';
 
 export default function SessionsPage() {
   const { user } = useAuth();
@@ -17,9 +17,7 @@ export default function SessionsPage() {
   const [scheduledAt, setScheduledAt] = useState('');
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [customMeetingUrl, setCustomMeetingUrl] = useState('');
-
-  // Active Video Call State (In-App Responsive WebRTC Modal)
-  const [activeCallRoom, setActiveCallRoom] = useState<{ url: string; title: string } | null>(null);
+  const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
 
   // Fetch user sessions
   const { data: sessionsRes, isLoading } = useQuery({
@@ -115,8 +113,17 @@ export default function SessionsPage() {
       }
     }
 
-    // Launch In-App Mobile-Responsive Room
-    setActiveCallRoom({ url: finalUrl, title: sess.title });
+    // Open directly in fresh browser tab (prevents X-Frame-Options iframe connection refusal)
+    window.open(finalUrl, '_blank');
+  };
+
+  const handleCopyLink = (sess: any) => {
+    const finalUrl = getDirectRoomUrl(sess.meetingUrl || sess.swapRequestId || sess.id);
+    if (typeof window !== 'undefined') {
+      navigator.clipboard.writeText(finalUrl);
+      setCopiedSessionId(sess.id);
+      setTimeout(() => setCopiedSessionId(null), 2500);
+    }
   };
 
   return (
@@ -128,7 +135,7 @@ export default function SessionsPage() {
             <Calendar className="w-5 h-5 text-emerald-500" /> 1-on-1 Live Video Teaching Sessions
           </h1>
           <p className="text-xs text-textMuted">
-            Instant HD video rooms for active skill swaps. Both users join the exact same room directly with zero lobby waiting.
+            Instant HD video rooms for active skill swaps. Both users join the exact same room directly in a fresh tab with zero lobby waiting.
           </p>
         </div>
 
@@ -208,12 +215,25 @@ export default function SessionsPage() {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 w-full sm:w-auto">
-                      {/* Direct Launch In-App Responsive Video Call */}
+                      {/* Direct Launch Clean Tab Video Call */}
                       <button
                         onClick={() => handleJoinCall(sess)}
-                        className="w-full sm:w-auto btn-primary text-xs font-semibold px-4 py-2.5 flex items-center gap-2 justify-center shadow-md"
+                        className="w-full sm:w-auto btn-primary text-xs font-bold px-4 py-2.5 flex items-center gap-2 justify-center shadow-md hover:scale-[1.02] transition-transform"
                       >
-                        <Video className="w-4 h-4 text-emerald-400" /> Join Direct Call & Notify Partner
+                        <Video className="w-4 h-4 text-emerald-400" /> Join Video Call & Ring Partner
+                      </button>
+
+                      {/* Copy Room Link */}
+                      <button
+                        onClick={() => handleCopyLink(sess)}
+                        className="p-2.5 rounded-xl bg-surface border border-surfaceBorder text-textMuted hover:text-textMain transition-colors flex items-center justify-center"
+                        title="Copy direct room link for mobile or external browser"
+                      >
+                        {copiedSessionId === sess.id ? (
+                          <Check className="w-4 h-4 text-emerald-500" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
                       </button>
 
                       {/* External Link Launch */}
@@ -222,7 +242,7 @@ export default function SessionsPage() {
                         target="_blank"
                         rel="noreferrer"
                         className="p-2.5 rounded-xl bg-surface border border-surfaceBorder text-textMuted hover:text-textMain transition-colors flex items-center justify-center"
-                        title="Open in new browser window"
+                        title="Open in new browser tab"
                       >
                         <ExternalLink className="w-4 h-4" />
                       </a>
@@ -241,55 +261,6 @@ export default function SessionsPage() {
               </div>
             );
           })}
-        </div>
-      )}
-
-      {/* In-App Mobile & Desktop Responsive WebRTC Video Call Drawer Modal */}
-      {activeCallRoom && (
-        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex flex-col p-2 sm:p-6 animate-in fade-in zoom-in-95">
-          <div className="bg-slate-900 border-2 border-emerald-500/40 rounded-3xl flex flex-col w-full h-full shadow-2xl overflow-hidden relative">
-            {/* Call Header */}
-            <div className="p-3 sm:p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500" />
-                <div>
-                  <h3 className="text-xs sm:text-sm font-black text-white flex items-center gap-2">
-                    <Video className="w-4 h-4 text-emerald-400" /> {activeCallRoom.title}
-                  </h3>
-                  <p className="text-[10px] sm:text-xs text-slate-400">Direct WebRTC Room • Both Users In Same Room</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <a
-                  href={activeCallRoom.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold hover:bg-slate-700 transition-colors hidden sm:flex items-center gap-1.5"
-                >
-                  <Maximize2 className="w-3.5 h-3.5 text-emerald-400" /> Full Window ↗
-                </a>
-
-                <button
-                  onClick={() => setActiveCallRoom(null)}
-                  className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-red-500/20 transition-all"
-                  title="Leave Call Room"
-                >
-                  <X className="w-5 h-5 text-red-400" />
-                </button>
-              </div>
-            </div>
-
-            {/* Video Call WebRTC Frame (Mobile & Desktop Responsive) */}
-            <div className="flex-1 w-full h-full bg-slate-950 relative">
-              <iframe
-                src={activeCallRoom.url}
-                allow="camera; microphone; display-capture; autoplay; clipboard-write; speaker"
-                className="w-full h-full border-0"
-                title="Live SkillXchange Video Call Room"
-              />
-            </div>
-          </div>
         </div>
       )}
 
