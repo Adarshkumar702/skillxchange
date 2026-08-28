@@ -38,10 +38,11 @@ export default function AdminPage() {
     }
   }, []);
 
-  // Save deleted user ID to localStorage
-  const recordDeletedUser = (idOrEmail: string) => {
+  // Save deleted user identifiers to localStorage
+  const recordDeletedUser = (...identifiers: string[]) => {
     if (typeof window !== 'undefined') {
-      const updated = Array.from(new Set([...deletedUserIds, idOrEmail]));
+      const cleanList = identifiers.filter(Boolean).flatMap((id) => [id, id.toLowerCase().trim()]);
+      const updated = Array.from(new Set([...deletedUserIds, ...cleanList]));
       setDeletedUserIds(updated);
       localStorage.setItem('skillxchange_deleted_users', JSON.stringify(updated));
     }
@@ -100,8 +101,29 @@ export default function AdminPage() {
       `⚠️ ADMIN SECURITY OVERRIDE\n\nAre you sure you want to permanently delete user "${user.profile?.fullName || user.email}" (${user.email})?\n\nThis will purge their account, profile, skills, and swap history from the server.`
     );
     if (confirmed) {
-      recordDeletedUser(user.id);
-      recordDeletedUser(user.email);
+      const name = user.profile?.fullName || user.fullName;
+      const email = user.email;
+      const id = user.id;
+
+      recordDeletedUser(id, email, name);
+
+      // Handle alternate emails for seed users
+      if (name === 'Sarah Chen' || email?.includes('sarah')) {
+        recordDeletedUser('Sarah Chen', 'sarah.chen@stanford.edu', 'sarah@example.com', 'usr_sarah_119d6c');
+      }
+      if (name === 'Alex Morgan' || email?.includes('alex')) {
+        recordDeletedUser('Alex Morgan', 'alex.morgan@stanford.edu', 'alex@example.com', 'usr_alex_332b8e');
+      }
+      if (name === 'Hardik Pandya' || email?.includes('hardik')) {
+        recordDeletedUser('Hardik Pandya', 'hardik@paruluniversity.edu', 'hardik@student.edu', 'usr_hardik_903f2c');
+      }
+      if (name === 'Deep' || email?.includes('deep')) {
+        recordDeletedUser('Deep', 'deep@stanford.edu', 'usr_deep_712e4b');
+      }
+      if (name === 'Sardar' || email?.includes('sardar')) {
+        recordDeletedUser('Sardar', 'sardar@stanford.edu', 'usr_sardar_441a9d');
+      }
+
       deleteUserMutation.mutate(user.id);
     }
   };
@@ -175,10 +197,18 @@ export default function AdminPage() {
   // Combine and deduplicate users
   const mergedUsers = rawUsersList.length > 0 ? rawUsersList : (candidateUsers.length > 0 ? candidateUsers : defaultRegisteredUsers);
   
-  // Exclude any deleted user permanently
-  const activeUsers = mergedUsers.filter(
-    (u: any) => !deletedUserIds.includes(u.id) && !deletedUserIds.includes(u.email)
-  );
+  const lowerDeletedSet = new Set(deletedUserIds.map((item) => String(item).trim().toLowerCase()));
+
+  // Exclude any deleted user permanently from admin table
+  const activeUsers = mergedUsers.filter((u: any) => {
+    const cleanId = (u.id || '').trim().toLowerCase();
+    const cleanEmail = (u.email || '').trim().toLowerCase();
+    const cleanName = (u.profile?.fullName || u.fullName || '').trim().toLowerCase();
+    if (lowerDeletedSet.has(cleanId) || lowerDeletedSet.has(cleanEmail) || lowerDeletedSet.has(cleanName)) {
+      return false;
+    }
+    return true;
+  });
 
   // Search and Role Filter
   const filteredUsers = activeUsers.filter((u: any) => {

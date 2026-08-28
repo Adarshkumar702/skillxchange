@@ -1,7 +1,7 @@
 import { prisma } from '../config/prisma';
 import { CreateReportInput, ReportStatus } from '@skillxchange/shared';
 
-// Global Deleted Users Registry
+// Global Deleted Users Registry (stores lowercase identifiers for robust matching)
 export const deletedUserRegistry = new Set<string>();
 
 export class AdminService {
@@ -80,20 +80,26 @@ export class AdminService {
   }
 
   public async deleteUser(userId: string) {
+    const cleanId = (userId || '').trim().toLowerCase();
+    deletedUserRegistry.add(cleanId);
     deletedUserRegistry.add(userId);
 
-    // Map known seed IDs to their identifiers
-    const seedUserMap: Record<string, { email: string; name: string }> = {
-      'usr_hardik_903f2c': { email: 'hardik@paruluniversity.edu', name: 'Hardik Pandya' },
-      'usr_deep_712e4b': { email: 'deep@stanford.edu', name: 'Deep' },
-      'usr_sardar_441a9d': { email: 'sardar@stanford.edu', name: 'Sardar' },
-      'usr_alex_332b8e': { email: 'alex.morgan@stanford.edu', name: 'Alex Morgan' },
-      'usr_sarah_119d6c': { email: 'sarah.chen@stanford.edu', name: 'Sarah Chen' },
+    // Map seed user IDs to all alternate emails and names
+    const seedUserMap: Record<string, { emails: string[]; name: string }> = {
+      'usr_hardik_903f2c': { emails: ['hardik@paruluniversity.edu', 'hardik@student.edu'], name: 'Hardik Pandya' },
+      'usr_deep_712e4b': { emails: ['deep@stanford.edu', 'deep@student.edu'], name: 'Deep' },
+      'usr_sardar_441a9d': { emails: ['sardar@stanford.edu', 'sardar@student.edu'], name: 'Sardar' },
+      'usr_alex_332b8e': { emails: ['alex.morgan@stanford.edu', 'alex@example.com', 'alexmorgan@student.edu'], name: 'Alex Morgan' },
+      'usr_sarah_119d6c': { emails: ['sarah.chen@stanford.edu', 'sarah@example.com', 'sarahchen@student.edu'], name: 'Sarah Chen' },
     };
 
     if (seedUserMap[userId]) {
-      deletedUserRegistry.add(seedUserMap[userId].email);
+      seedUserMap[userId].emails.forEach((em) => {
+        deletedUserRegistry.add(em);
+        deletedUserRegistry.add(em.toLowerCase());
+      });
       deletedUserRegistry.add(seedUserMap[userId].name);
+      deletedUserRegistry.add(seedUserMap[userId].name.toLowerCase());
     }
 
     try {
@@ -104,9 +110,12 @@ export class AdminService {
 
       if (existingUser) {
         deletedUserRegistry.add(existingUser.id);
+        deletedUserRegistry.add(existingUser.id.toLowerCase());
         deletedUserRegistry.add(existingUser.email);
+        deletedUserRegistry.add(existingUser.email.toLowerCase());
         if (existingUser.profile?.fullName) {
           deletedUserRegistry.add(existingUser.profile.fullName);
+          deletedUserRegistry.add(existingUser.profile.fullName.toLowerCase());
         }
       }
 

@@ -62,16 +62,22 @@ export default function DiscoverPage() {
 
   const serverDeletedList: string[] = serverDeletedUsersRes?.data || [];
   const allDeletedUserIds = Array.from(new Set([...localDeletedUserIds, ...serverDeletedList]));
+  const lowerDeletedSet = new Set(allDeletedUserIds.map((item) => String(item).trim().toLowerCase()));
 
-  // Helper to check if a user is removed by Admin
+  // Robust Normalized Helper to check if a user is removed by Admin
   const checkIsRemovedByAdmin = (u: any) => {
     if (!u) return false;
-    return (
-      u.isDeleted === true ||
-      allDeletedUserIds.includes(u.id) ||
-      allDeletedUserIds.includes(u.email) ||
-      allDeletedUserIds.includes(u.fullName)
-    );
+    if (u.isDeleted === true) return true;
+
+    const cleanId = (u.id || '').trim().toLowerCase();
+    const cleanEmail = (u.email || '').trim().toLowerCase();
+    const cleanName = (u.fullName || u.profile?.fullName || '').trim().toLowerCase();
+
+    if (cleanId && lowerDeletedSet.has(cleanId)) return true;
+    if (cleanEmail && lowerDeletedSet.has(cleanEmail)) return true;
+    if (cleanName && lowerDeletedSet.has(cleanName)) return true;
+
+    return false;
   };
 
   // Helper to reliably classify Verified User vs Sample Profile
@@ -264,7 +270,7 @@ export default function DiscoverPage() {
                         {/* Real User vs Sample Demo vs Removed Badge */}
                         {isRemoved ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 mt-1 rounded-full bg-red-500/10 text-red-500 border border-red-500/30">
-                            <UserX className="w-3 h-3 text-red-500" /> Account Removed by Admin
+                            <UserX className="w-3 h-3 text-red-500" /> Removed by Admin
                           </span>
                         ) : verified ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 mt-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
