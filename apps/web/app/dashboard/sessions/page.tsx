@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchApi } from '../../../lib/apiClient';
 import { getSocket } from '../../../lib/socketClient';
 import { useAuth } from '../../../lib/authContext';
-import { Calendar, Plus, Video, Clock, CheckCircle, ExternalLink, X, ShieldCheck, Lock } from 'lucide-react';
+import { Calendar, Plus, Video, Clock, CheckCircle, ExternalLink, X, ShieldCheck, Lock, Maximize2 } from 'lucide-react';
 
 export default function SessionsPage() {
   const { user } = useAuth();
@@ -17,6 +17,9 @@ export default function SessionsPage() {
   const [scheduledAt, setScheduledAt] = useState('');
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [customMeetingUrl, setCustomMeetingUrl] = useState('');
+
+  // Active Video Call State (In-App Responsive WebRTC Modal)
+  const [activeCallRoom, setActiveCallRoom] = useState<{ url: string; title: string } | null>(null);
 
   // Fetch user sessions
   const { data: sessionsRes, isLoading } = useQuery({
@@ -64,22 +67,35 @@ export default function SessionsPage() {
     });
   };
 
-  const getCleanVideoUrl = (rawUrl: string) => {
-    if (!rawUrl) return '';
-    const displayName = encodeURIComponent(user?.profile?.fullName || 'Student');
-    
-    // Replace meet.jit.si with open WebRTC provider meet.ffmuc.net (no 8x8 moderator lock)
-    let url = rawUrl.replace('meet.jit.si', 'meet.ffmuc.net');
-    
-    if (url.includes('meet.ffmuc.net')) {
-      const baseUrl = url.split('#')[0];
-      return `${baseUrl}#userInfo.displayName="${displayName}"&config.prejoinPageEnabled=false&config.startWithAudioMuted=false`;
+  // Deterministic Direct Room URL generator
+  // Guarantees both users land in the exact same room, bypasses lobby/waiting room lock, and works on mobile devices
+  const getDirectRoomUrl = (rawUrlOrSwapId: string) => {
+    if (!rawUrlOrSwapId) return '';
+    const userName = encodeURIComponent(user?.profile?.fullName || 'Student');
+
+    let cleanId = rawUrlOrSwapId
+      .replace(/^https?:\/\/[^\/]+\//, '')
+      .replace(/#.*$/, '')
+      .replace(/[^a-zA-Z0-9]/g, '');
+
+    if (!cleanId || cleanId.length < 3) {
+      cleanId = 'SkillXchange_Session_Room';
+    } else {
+      cleanId = `SkillXchange_Room_${cleanId}`;
     }
-    return url;
+
+    // Parameters:
+    // config.prejoinPageEnabled=false  -> skip prejoin screen
+    // config.enableLobby=false          -> disable moderator waiting room lock
+    // config.startWithAudioMuted=false  -> auto-start audio
+    // config.startWithVideoMuted=false  -> auto-start video
+    // config.requireDisplayName=false   -> allow immediate entry
+    // config.disableDeepLinking=true    -> prevent mobile browser from forcing app download
+    return `https://meet.ffmuc.net/${cleanId}#config.prejoinPageEnabled=false&config.enableLobby=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.requireDisplayName=false&config.disableDeepLinking=true&userInfo.displayName="${userName}"`;
   };
 
   const handleJoinCall = (sess: any) => {
-    const finalUrl = getCleanVideoUrl(sess.meetingUrl);
+    const finalUrl = getDirectRoomUrl(sess.meetingUrl || sess.swapRequestId || sess.id);
 
     // Identify partner to send live incoming call request
     const partnerId =
@@ -99,8 +115,8 @@ export default function SessionsPage() {
       }
     }
 
-    // Open video call natively in dedicated window
-    window.open(finalUrl, '_blank');
+    // Launch In-App Mobile-Responsive Room
+    setActiveCallRoom({ url: finalUrl, title: sess.title });
   };
 
   return (
@@ -112,7 +128,7 @@ export default function SessionsPage() {
             <Calendar className="w-5 h-5 text-emerald-500" /> 1-on-1 Live Video Teaching Sessions
           </h1>
           <p className="text-xs text-textMuted">
-            Instant HD video rooms for active skill swaps. Closed automatically when exchange is completed.
+            Instant HD video rooms for active skill swaps. Both users join the exact same room directly with zero lobby waiting.
           </p>
         </div>
 
@@ -173,7 +189,7 @@ export default function SessionsPage() {
                       </p>
                     ) : (
                       <p className="flex items-center gap-1.5 text-[11px] text-emerald-500 font-semibold">
-                        <ShieldCheck className="w-3.5 h-3.5" /> Instant Open Video Access (Active Swap)
+                        <ShieldCheck className="w-3.5 h-3.5" /> Instant Direct Video Room (No Moderator Lock)
                       </p>
                     )}
                   </div>
@@ -190,35 +206,33 @@ export default function SessionsPage() {
                         <Lock className="w-4 h-4 text-emerald-500" /> Session Closed (Swap Completed)
                       </button>
                     </div>
-                  ) : sess.meetingUrl ? (
-                    <div className="flex items-center gap-2">
-                      {/* Direct Launch Video Call & Call Request Push */}
+                  ) : (
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      {/* Direct Launch In-App Responsive Video Call */}
                       <button
                         onClick={() => handleJoinCall(sess)}
-                        className="btn-primary text-xs font-semibold px-4 py-2 flex items-center gap-2 justify-center shadow-md"
+                        className="w-full sm:w-auto btn-primary text-xs font-semibold px-4 py-2.5 flex items-center gap-2 justify-center shadow-md"
                       >
-                        <Video className="w-4 h-4 text-emerald-400" /> Join Call & Notify Partner
+                        <Video className="w-4 h-4 text-emerald-400" /> Join Direct Call & Notify Partner
                       </button>
 
-                      {/* External Link Option */}
+                      {/* External Link Launch */}
                       <a
-                        href={getCleanVideoUrl(sess.meetingUrl)}
+                        href={getDirectRoomUrl(sess.meetingUrl || sess.swapRequestId || sess.id)}
                         target="_blank"
                         rel="noreferrer"
-                        className="p-2 rounded-lg bg-surface border border-surfaceBorder text-textMuted hover:text-textMain transition-colors"
-                        title="Open in new browser window (Google Meet / Zoom / Open WebRTC)"
+                        className="p-2.5 rounded-xl bg-surface border border-surfaceBorder text-textMuted hover:text-textMain transition-colors flex items-center justify-center"
+                        title="Open in new browser window"
                       >
-                        <ExternalLink className="w-3.5 h-3.5" />
+                        <ExternalLink className="w-4 h-4" />
                       </a>
                     </div>
-                  ) : (
-                    <span className="text-xs text-textMuted">No video URL attached</span>
                   )}
 
                   {!isSessionCompleted && sess.status === 'SCHEDULED' && (
                     <button
                       onClick={() => updateStatusMutation.mutate({ id: sess.id, status: 'COMPLETED' })}
-                      className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-surfaceBorder text-xs font-semibold text-textMuted hover:text-textMain flex items-center gap-1 justify-center"
+                      className="px-3 py-2 rounded-xl border border-slate-300 dark:border-surfaceBorder text-xs font-semibold text-textMuted hover:text-textMain flex items-center gap-1 justify-center"
                     >
                       <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Mark Completed
                     </button>
@@ -227,6 +241,55 @@ export default function SessionsPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* In-App Mobile & Desktop Responsive WebRTC Video Call Drawer Modal */}
+      {activeCallRoom && (
+        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex flex-col p-2 sm:p-6 animate-in fade-in zoom-in-95">
+          <div className="bg-slate-900 border-2 border-emerald-500/40 rounded-3xl flex flex-col w-full h-full shadow-2xl overflow-hidden relative">
+            {/* Call Header */}
+            <div className="p-3 sm:p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500" />
+                <div>
+                  <h3 className="text-xs sm:text-sm font-black text-white flex items-center gap-2">
+                    <Video className="w-4 h-4 text-emerald-400" /> {activeCallRoom.title}
+                  </h3>
+                  <p className="text-[10px] sm:text-xs text-slate-400">Direct WebRTC Room • Both Users In Same Room</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <a
+                  href={activeCallRoom.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold hover:bg-slate-700 transition-colors hidden sm:flex items-center gap-1.5"
+                >
+                  <Maximize2 className="w-3.5 h-3.5 text-emerald-400" /> Full Window ↗
+                </a>
+
+                <button
+                  onClick={() => setActiveCallRoom(null)}
+                  className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-red-500/20 transition-all"
+                  title="Leave Call Room"
+                >
+                  <X className="w-5 h-5 text-red-400" />
+                </button>
+              </div>
+            </div>
+
+            {/* Video Call WebRTC Frame (Mobile & Desktop Responsive) */}
+            <div className="flex-1 w-full h-full bg-slate-950 relative">
+              <iframe
+                src={activeCallRoom.url}
+                allow="camera; microphone; display-capture; autoplay; clipboard-write; speaker"
+                className="w-full h-full border-0"
+                title="Live SkillXchange Video Call Room"
+              />
+            </div>
+          </div>
         </div>
       )}
 
@@ -292,14 +355,14 @@ export default function SessionsPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-textMuted mb-1">
-                  Custom Meeting URL (Optional - Google Meet / Zoom link)
+                  Custom Meeting URL (Optional)
                 </label>
                 <input
                   type="url"
                   value={customMeetingUrl}
                   onChange={(e) => setCustomMeetingUrl(e.target.value)}
                   className="w-full p-2.5 rounded-lg bg-surface border border-surfaceBorder text-xs text-textMain"
-                  placeholder="https://meet.google.com/abc-defg-hij or leave blank for instant room"
+                  placeholder="Leave blank to generate instant shared room"
                 />
               </div>
 

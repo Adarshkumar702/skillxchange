@@ -15,8 +15,9 @@ export class SessionService {
       throw new Error(`Cannot schedule session for a swap in status ${swap.status}. Swap must be ACCEPTED.`);
     }
 
+    // Deterministic room name derived from swapRequestId to guarantee both users join exact same room
     const cleanSwapId = input.swapRequestId.replace(/[^a-zA-Z0-9]/g, '');
-    const defaultMeetingUrl = `https://meet.ffmuc.net/SkillXchange_${cleanSwapId}#config.prejoinPageEnabled=false&config.startWithAudioMuted=false`;
+    const defaultMeetingUrl = `https://meet.ffmuc.net/SkillXchange_Room_${cleanSwapId}#config.prejoinPageEnabled=false&config.enableLobby=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.requireDisplayName=false&config.disableDeepLinking=true`;
 
     const session = await prisma.learningSession.create({
       data: {

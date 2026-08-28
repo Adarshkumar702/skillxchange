@@ -26,7 +26,15 @@ export function IncomingCallBanner() {
   if (!callData) return null;
 
   const handleAcceptCall = () => {
-    window.open(callData.meetingUrl, '_blank');
+    let url = callData.meetingUrl || '';
+
+    // Guarantee prejoin, lobby, and mobile deep linking bypass parameters
+    if (url.includes('meet.ffmuc.net') || url.includes('meet.jit.si')) {
+      const baseUrl = url.split('#')[0];
+      url = `${baseUrl}#config.prejoinPageEnabled=false&config.enableLobby=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.requireDisplayName=false&config.disableDeepLinking=true`;
+    }
+
+    window.open(url, '_blank');
     setCallData(null);
   };
 
