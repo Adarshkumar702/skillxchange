@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { fetchApi } from './apiClient';
 
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
 interface User {
   id: string;
   email: string;
@@ -46,17 +48,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchCurrentUser = async () => {
     const token = localStorage.getItem('accessToken');
+    const loginTime = localStorage.getItem('loginTimestamp');
+
     if (!token) {
       setUser(null);
       setLoading(false);
       return;
     }
+
+    // Check 7-day default login window
+    if (loginTime) {
+      const elapsed = Date.now() - parseInt(loginTime, 10);
+      if (elapsed > SEVEN_DAYS_MS) {
+        console.log('7-day login period expired. Please log in again.');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('loginTimestamp');
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+    }
+
     const res = await fetchApi('/users/profile');
     if (res.success && res.data) {
       setUser(res.data);
     } else {
       setUser(null);
       localStorage.removeItem('accessToken');
+      localStorage.removeItem('loginTimestamp');
     }
     setLoading(false);
   };
@@ -64,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     fetchCurrentUser();
 
-    // Listen to localStorage changes across browser tabs/windows
+    // Listen to localStorage changes across browser tabs
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'accessToken') {
         fetchCurrentUser();
@@ -76,13 +95,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = (accessToken: string, userData: User) => {
     localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('loginTimestamp', Date.now().toString());
     setUser(userData);
-    fetchCurrentUser(); // Immediately fetch complete profile with skills
+    fetchCurrentUser(); // Immediately sync user skills and profile
   };
 
   const logout = async () => {
     await fetchApi('/auth/logout', { method: 'POST' });
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('loginTimestamp');
     setUser(null);
   };
 

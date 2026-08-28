@@ -12,7 +12,7 @@ export const ENV = {
   DATABASE_URL: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/skillxchange?schema=public',
   REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
   JWT_SECRET: process.env.JWT_SECRET || 'fallback-super-secret-jwt-key',
-  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '15m',
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'fallback-super-secret-refresh-jwt-key',
   JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   BCRYPT_SALT_ROUNDS: parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10),
