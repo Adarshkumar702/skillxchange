@@ -94,11 +94,14 @@ export class MatchingService {
       candidates = candidates.filter((c) => (c.profile?.reputationScore || 0) >= filters.minRating!);
     }
 
-    // Identify registered users vs seed sample profiles
-    const seedEmails = ['student@example.com', 'alex@example.com', 'sarah@example.com', 'david@example.com'];
+    // Pure static placeholder emails that render as Sample Profile
+    const pureSampleEmails = ['alex@example.com', 'sarah@example.com', 'david@example.com'];
+
     const isCandidateRealUser = (c: typeof candidates[0]) => {
-      if (c.isVerified) return true;
-      if (!seedEmails.includes(c.email.toLowerCase())) return true;
+      // If user is verified in DB or not in static sample list, mark as Real Verified User
+      if (c.isVerified === true) return true;
+      const cleanEmail = (c.email || '').trim().toLowerCase();
+      if (!pureSampleEmails.includes(cleanEmail)) return true;
       return false;
     };
 
