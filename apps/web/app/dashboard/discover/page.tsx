@@ -19,6 +19,8 @@ import {
   Github,
   Linkedin,
   Share2,
+  UserX,
+  AlertTriangle,
 } from 'lucide-react';
 
 export default function DiscoverPage() {
@@ -38,7 +40,7 @@ export default function DiscoverPage() {
   const [swapError, setSwapError] = useState('');
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Load deleted user IDs from localStorage to filter out deleted users from candidate list
+  // Load deleted user IDs from localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -51,6 +53,17 @@ export default function DiscoverPage() {
       }
     }
   }, []);
+
+  // Helper to check if a user is removed by Admin
+  const checkIsRemovedByAdmin = (u: any) => {
+    if (!u) return false;
+    return (
+      u.isDeleted === true ||
+      deletedUserIds.includes(u.id) ||
+      deletedUserIds.includes(u.email) ||
+      deletedUserIds.includes(u.fullName)
+    );
+  };
 
   // Helper to reliably classify Verified User vs Sample Profile
   const isUserVerified = (u: any) => {
@@ -72,17 +85,16 @@ export default function DiscoverPage() {
       ),
   });
 
-  const rawMatches = matchesRes?.data || [];
-  const matches = rawMatches.filter(
-    (m: any) =>
-      !deletedUserIds.includes(m.user.id) &&
-      !deletedUserIds.includes(m.user.email) &&
-      !deletedUserIds.includes(m.user.fullName)
-  );
+  const matches = matchesRes?.data || [];
 
   const handleSendSwap = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCandidate || !offeredSkillId || !requestedSkillId) return;
+
+    if (checkIsRemovedByAdmin(selectedCandidate.user)) {
+      setSwapError('Cannot send swap request: This account was removed by the Admin.');
+      return;
+    }
 
     setSwapSending(true);
     setSwapError('');
@@ -212,6 +224,8 @@ export default function DiscoverPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {matches.map((match: any) => {
             const verified = isUserVerified(match.user);
+            const isRemoved = checkIsRemovedByAdmin(match.user);
+
             return (
               <div key={match.user.id} className="glass-card p-6 rounded-2xl space-y-5 flex flex-col justify-between relative overflow-hidden">
                 <div className="space-y-4">
@@ -228,7 +242,7 @@ export default function DiscoverPage() {
                           alt="Avatar"
                           className="w-14 h-14 rounded-2xl border-2 border-slate-300 dark:border-slate-700 shadow-md object-cover group-hover:scale-105 transition-transform"
                         />
-                        <span className="w-3.5 h-3.5 bg-emerald-500 border-2 border-surface rounded-full absolute -bottom-1 -right-1" title="Online Student" />
+                        <span className={`w-3.5 h-3.5 border-2 border-surface rounded-full absolute -bottom-1 -right-1 ${isRemoved ? 'bg-red-500' : 'bg-emerald-500'}`} />
                       </div>
                       <div>
                         <h3 className="text-sm font-extrabold text-textMain flex items-center gap-1.5 group-hover:text-blue-500 transition-colors">
@@ -238,8 +252,12 @@ export default function DiscoverPage() {
                           <GraduationCap className="w-3.5 h-3.5 text-blue-500" /> {match.user.university}
                         </p>
                         
-                        {/* Real User vs Sample Demo Badge */}
-                        {verified ? (
+                        {/* Real User vs Sample Demo vs Removed Badge */}
+                        {isRemoved ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 mt-1 rounded-full bg-red-500/10 text-red-500 border border-red-500/30">
+                            <UserX className="w-3 h-3 text-red-500" /> Removed by Admin
+                          </span>
+                        ) : verified ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 mt-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                             <CheckCircle className="w-3 h-3 text-emerald-500" /> Verified User
                           </span>
@@ -297,14 +315,15 @@ export default function DiscoverPage() {
                   </button>
 
                   <button
+                    disabled={isRemoved}
                     onClick={() => {
                       setSelectedCandidate(match);
                       setOfferedSkillId(userTeachingSkills[0]?.skillId || '');
                       setRequestedSkillId(match.user.teachingSkills[0]?.id || '');
                     }}
-                    className="btn-primary text-xs font-semibold py-2 px-3.5 flex items-center gap-1.5 shadow-sm"
+                    className="btn-primary text-xs font-semibold py-2 px-3.5 flex items-center gap-1.5 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    <Send className="w-3.5 h-3.5" /> Quick Swap Request
+                    <Send className="w-3.5 h-3.5" /> {isRemoved ? 'Removed' : 'Quick Swap Request'}
                   </button>
                 </div>
               </div>
@@ -314,134 +333,150 @@ export default function DiscoverPage() {
       )}
 
       {/* View Public Student Profile Modal */}
-      {viewStudentModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass-panel p-6 rounded-2xl border border-surfaceBorder max-w-lg w-full space-y-5 shadow-2xl relative animate-in fade-in zoom-in-95">
-            <button
-              onClick={() => setViewStudentModal(null)}
-              className="absolute top-4 right-4 p-1.5 rounded-lg bg-surface border border-surfaceBorder text-textMuted hover:text-textMain"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            {/* Profile Avatar Header & Image Lightbox Trigger */}
-            <div className="flex items-center gap-4 border-b border-surfaceBorder pb-4">
-              <div
-                className="relative cursor-pointer group"
-                onClick={() => setLightboxImage(viewStudentModal.user.avatarUrl)}
-                title="Click image to zoom full preview"
-              >
-                <img
-                  src={viewStudentModal.user.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Demo'}
-                  alt="Avatar"
-                  className="w-16 h-16 rounded-2xl border-2 border-blue-500 object-cover shadow-lg group-hover:scale-105 transition-transform"
-                />
-                <div className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                  <Eye className="w-4 h-4 text-white" />
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-base font-extrabold text-textMain flex items-center gap-2">
-                  {viewStudentModal.user.fullName}
-                  {isUserVerified(viewStudentModal.user) ? (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                      ✓ Verified User
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-500 border border-slate-500/20">
-                      Sample Profile
-                    </span>
-                  )}
-                </h3>
-                <p className="text-xs text-textMuted flex items-center gap-1">
-                  <GraduationCap className="w-3.5 h-3.5 text-blue-500" /> {viewStudentModal.user.university}
-                </p>
-                <p className="text-xs text-textMuted">{viewStudentModal.user.course} ('{viewStudentModal.user.graduationYear % 100})</p>
-              </div>
-            </div>
-
-            {/* Bio */}
-            <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-surfaceBorder text-xs text-textMain leading-relaxed">
-              {viewStudentModal.user.bio || 'This student has not added a detailed bio description yet.'}
-            </div>
-
-            {/* Stats Row */}
-            <div className="grid grid-cols-2 gap-3 text-center text-xs">
-              <div className="p-3 rounded-xl bg-surface border border-surfaceBorder">
-                <span className="text-textMuted block text-[10px] uppercase font-bold">Reputation Score</span>
-                <span className="text-sm font-black text-amber-500 flex items-center justify-center gap-1">
-                  <Star className="w-4 h-4 fill-amber-400" /> {viewStudentModal.user.reputationScore}
-                </span>
-              </div>
-              <div className="p-3 rounded-xl bg-surface border border-surfaceBorder">
-                <span className="text-textMuted block text-[10px] uppercase font-bold">Completed Exchanges</span>
-                <span className="text-sm font-black text-blue-500">{viewStudentModal.user.completedExchanges || 0}</span>
-              </div>
-            </div>
-
-            {/* Skills Lists */}
-            <div className="space-y-3 text-xs">
-              <div>
-                <span className="text-[11px] font-bold text-textMuted uppercase tracking-wider block mb-1.5">Teaches:</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {viewStudentModal.user.teachingSkills.map((sk: any) => (
-                    <span key={sk.id} className="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 text-textMain text-xs font-semibold">
-                      {sk.name} <span className="text-[10px] text-blue-500">({sk.proficiency})</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <span className="text-[11px] font-bold text-textMuted uppercase tracking-wider block mb-1.5">Wants to Learn:</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {viewStudentModal.user.learningSkills.map((sk: any) => (
-                    <span key={sk.id} className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-semibold">
-                      {sk.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Links */}
-            <div className="flex items-center gap-4 text-xs font-semibold pt-2 border-t border-surfaceBorder">
-              {viewStudentModal.user.githubUrl && (
-                <a href={viewStudentModal.user.githubUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline">
-                  <Github className="w-3.5 h-3.5" /> GitHub Profile
-                </a>
-              )}
-              {viewStudentModal.user.linkedinUrl && (
-                <a href={viewStudentModal.user.linkedinUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-blue-500 hover:underline">
-                  <Linkedin className="w-3.5 h-3.5" /> LinkedIn
-                </a>
-              )}
-            </div>
-
-            {/* Action Footer */}
-            <div className="flex justify-end gap-3 pt-2">
+      {viewStudentModal && (() => {
+        const isRemovedByAdmin = checkIsRemovedByAdmin(viewStudentModal.user);
+        return (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="glass-panel p-6 rounded-2xl border border-surfaceBorder max-w-lg w-full space-y-5 shadow-2xl relative animate-in fade-in zoom-in-95">
               <button
                 onClick={() => setViewStudentModal(null)}
-                className="px-4 py-2 rounded-lg text-xs font-semibold text-textMuted hover:text-textMain"
+                className="absolute top-4 right-4 p-1.5 rounded-lg bg-surface border border-surfaceBorder text-textMuted hover:text-textMain"
               >
-                Close
+                <X className="w-4 h-4" />
               </button>
-              <button
-                onClick={() => {
-                  setSelectedCandidate(viewStudentModal);
-                  setOfferedSkillId(userTeachingSkills[0]?.skillId || '');
-                  setRequestedSkillId(viewStudentModal.user.teachingSkills[0]?.id || '');
-                  setViewStudentModal(null);
-                }}
-                className="btn-primary text-xs font-semibold px-4 py-2 flex items-center gap-1.5"
-              >
-                <Send className="w-3.5 h-3.5" /> Send Swap Request
-              </button>
+
+              {/* Profile Avatar Header & Image Lightbox Trigger */}
+              <div className="flex items-center gap-4 border-b border-surfaceBorder pb-4">
+                <div
+                  className="relative cursor-pointer group"
+                  onClick={() => setLightboxImage(viewStudentModal.user.avatarUrl)}
+                  title="Click image to zoom full preview"
+                >
+                  <img
+                    src={viewStudentModal.user.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Demo'}
+                    alt="Avatar"
+                    className="w-16 h-16 rounded-2xl border-2 border-blue-500 object-cover shadow-lg group-hover:scale-105 transition-transform"
+                  />
+                  <div className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                    <Eye className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-base font-extrabold text-textMain flex items-center gap-2">
+                    {viewStudentModal.user.fullName}
+                    {isRemovedByAdmin ? (
+                      <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-500 border border-red-500/30 flex items-center gap-1">
+                        <UserX className="w-3 h-3 text-red-500" /> Account Removed by Admin
+                      </span>
+                    ) : isUserVerified(viewStudentModal.user) ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        ✓ Verified User
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-500 border border-slate-500/20">
+                        Sample Profile
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-xs text-textMuted flex items-center gap-1">
+                    <GraduationCap className="w-3.5 h-3.5 text-blue-500" /> {viewStudentModal.user.university}
+                  </p>
+                  <p className="text-xs text-textMuted">{viewStudentModal.user.course} ('{viewStudentModal.user.graduationYear % 100})</p>
+                </div>
+              </div>
+
+              {/* Admin Removal Alert Banner */}
+              {isRemovedByAdmin && (
+                <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-bold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                  <span>This user account has been removed by the Admin / Project Owner. Skill swap requests are disabled.</span>
+                </div>
+              )}
+
+              {/* Bio */}
+              <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-surfaceBorder text-xs text-textMain leading-relaxed">
+                {viewStudentModal.user.bio || 'This student has not added a detailed bio description yet.'}
+              </div>
+
+              {/* Stats Row */}
+              <div className="grid grid-cols-2 gap-3 text-center text-xs">
+                <div className="p-3 rounded-xl bg-surface border border-surfaceBorder">
+                  <span className="text-textMuted block text-[10px] uppercase font-bold">Reputation Score</span>
+                  <span className="text-sm font-black text-amber-500 flex items-center justify-center gap-1">
+                    <Star className="w-4 h-4 fill-amber-400" /> {viewStudentModal.user.reputationScore}
+                  </span>
+                </div>
+                <div className="p-3 rounded-xl bg-surface border border-surfaceBorder">
+                  <span className="text-textMuted block text-[10px] uppercase font-bold">Completed Exchanges</span>
+                  <span className="text-sm font-black text-blue-500">{viewStudentModal.user.completedExchanges || 0}</span>
+                </div>
+              </div>
+
+              {/* Skills Lists */}
+              <div className="space-y-3 text-xs">
+                <div>
+                  <span className="text-[11px] font-bold text-textMuted uppercase tracking-wider block mb-1.5">Teaches:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {viewStudentModal.user.teachingSkills.map((sk: any) => (
+                      <span key={sk.id} className="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 text-textMain text-xs font-semibold">
+                        {sk.name} <span className="text-[10px] text-blue-500">({sk.proficiency})</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[11px] font-bold text-textMuted uppercase tracking-wider block mb-1.5">Wants to Learn:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {viewStudentModal.user.learningSkills.map((sk: any) => (
+                      <span key={sk.id} className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-semibold">
+                        {sk.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Links */}
+              <div className="flex items-center gap-4 text-xs font-semibold pt-2 border-t border-surfaceBorder">
+                {viewStudentModal.user.githubUrl && (
+                  <a href={viewStudentModal.user.githubUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline">
+                    <Github className="w-3.5 h-3.5" /> GitHub Profile
+                  </a>
+                )}
+                {viewStudentModal.user.linkedinUrl && (
+                  <a href={viewStudentModal.user.linkedinUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-blue-500 hover:underline">
+                    <Linkedin className="w-3.5 h-3.5" /> LinkedIn
+                  </a>
+                )}
+              </div>
+
+              {/* Action Footer */}
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  onClick={() => setViewStudentModal(null)}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold text-textMuted hover:text-textMain"
+                >
+                  Close
+                </button>
+                <button
+                  disabled={isRemovedByAdmin}
+                  onClick={() => {
+                    setSelectedCandidate(viewStudentModal);
+                    setOfferedSkillId(userTeachingSkills[0]?.skillId || '');
+                    setRequestedSkillId(viewStudentModal.user.teachingSkills[0]?.id || '');
+                    setViewStudentModal(null);
+                  }}
+                  className="btn-primary text-xs font-semibold px-4 py-2 flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Send className="w-3.5 h-3.5" /> {isRemovedByAdmin ? 'Account Removed by Admin' : 'Send Swap Request'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Profile Photo Lightbox Preview */}
       {lightboxImage && (
