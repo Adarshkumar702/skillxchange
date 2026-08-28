@@ -1,5 +1,5 @@
 import { prisma } from '../config/prisma';
-import { CreateSessionInput, SessionStatus } from '@skillxchange/shared';
+import { CreateSessionInput, SessionStatus, SwapStatus } from '@skillxchange/shared';
 
 export class SessionService {
   public async createSession(userId: string, input: CreateSessionInput) {
@@ -11,8 +11,11 @@ export class SessionService {
       throw new Error('Unauthorized or invalid swap request');
     }
 
+    if (swap.status !== SwapStatus.ACCEPTED) {
+      throw new Error(`Cannot schedule session for a swap in status ${swap.status}. Swap must be ACCEPTED.`);
+    }
+
     const cleanSwapId = input.swapRequestId.replace(/[^a-zA-Z0-9]/g, '');
-    // Use open WebRTC server meet.ffmuc.net which has zero moderator lock / login enforcement
     const defaultMeetingUrl = `https://meet.ffmuc.net/SkillXchange_${cleanSwapId}#config.prejoinPageEnabled=false&config.startWithAudioMuted=false`;
 
     const session = await prisma.learningSession.create({

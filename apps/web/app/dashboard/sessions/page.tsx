@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchApi } from '../../../lib/apiClient';
 import { getSocket } from '../../../lib/socketClient';
 import { useAuth } from '../../../lib/authContext';
-import { Calendar, Plus, Video, Clock, CheckCircle, ExternalLink, X, ShieldCheck } from 'lucide-react';
+import { Calendar, Plus, Video, Clock, CheckCircle, ExternalLink, X, ShieldCheck, Lock } from 'lucide-react';
 
 export default function SessionsPage() {
   const { user } = useAuth();
@@ -24,7 +24,7 @@ export default function SessionsPage() {
     queryFn: () => fetchApi('/sessions'),
   });
 
-  // Fetch active swaps to pick swapRequestId
+  // Fetch active swaps to pick swapRequestId (Only ACCEPTED active swaps)
   const { data: swapsRes } = useQuery({
     queryKey: ['activeSwapsForSessions'],
     queryFn: () => fetchApi('/swaps?status=ACCEPTED'),
@@ -112,7 +112,7 @@ export default function SessionsPage() {
             <Calendar className="w-5 h-5 text-emerald-500" /> 1-on-1 Live Video Teaching Sessions
           </h1>
           <p className="text-xs text-textMuted">
-            Instant HD video rooms with live screen sharing. Zero moderator lock or password required.
+            Instant HD video rooms for active skill swaps. Closed automatically when exchange is completed.
           </p>
         </div>
 
@@ -138,75 +138,95 @@ export default function SessionsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {sessions.map((sess: any) => (
-            <div key={sess.id} className="glass-card p-6 rounded-2xl border border-surfaceBorder space-y-5 flex flex-col justify-between shadow-md">
-              <div className="space-y-3">
-                <div className="flex justify-between items-start">
-                  <h3 className="text-sm font-extrabold text-textMain flex items-center gap-2">
-                    <Video className="w-4 h-4 text-blue-500" /> {sess.title}
-                  </h3>
-                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
-                    sess.status === 'COMPLETED'
-                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                      : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                  }`}>
-                    {sess.status}
-                  </span>
-                </div>
+          {sessions.map((sess: any) => {
+            const isSwapCompleted = sess.swapRequest?.status === 'COMPLETED';
+            const isSessionCompleted = sess.status === 'COMPLETED' || isSwapCompleted;
 
-                <p className="text-xs font-medium text-textMain leading-relaxed">
-                  {sess.description || 'Live coding walkthrough, topic explanation, and Q&A session.'}
-                </p>
-
-                <div className="space-y-1.5 text-xs text-textMuted">
-                  <p className="flex items-center gap-1.5 font-medium">
-                    <Clock className="w-3.5 h-3.5 text-blue-500" />
-                    {new Date(sess.scheduledAt).toLocaleString()} ({sess.durationMinutes} mins)
-                  </p>
-                  <p className="flex items-center gap-1.5 text-[11px] text-emerald-500 font-semibold">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Instant Open Video Access (Broadcast Call to Partner)
-                  </p>
-                </div>
-              </div>
-
-              {/* Video Call Action Bar */}
-              <div className="pt-4 border-t border-surfaceBorder flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                {sess.meetingUrl ? (
-                  <div className="flex items-center gap-2">
-                    {/* Direct Launch Video Call & Call Request Push */}
-                    <button
-                      onClick={() => handleJoinCall(sess)}
-                      className="btn-primary text-xs font-semibold px-4 py-2 flex items-center gap-2 justify-center shadow-md"
-                    >
-                      <Video className="w-4 h-4 text-emerald-400" /> Join Call & Notify Partner
-                    </button>
-
-                    {/* External Link Option */}
-                    <a
-                      href={getCleanVideoUrl(sess.meetingUrl)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="p-2 rounded-lg bg-surface border border-surfaceBorder text-textMuted hover:text-textMain transition-colors"
-                      title="Open in new browser window (Google Meet / Zoom / Open WebRTC)"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
+            return (
+              <div key={sess.id} className="glass-card p-6 rounded-2xl border border-surfaceBorder space-y-5 flex flex-col justify-between shadow-md">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-sm font-extrabold text-textMain flex items-center gap-2">
+                      <Video className="w-4 h-4 text-blue-500" /> {sess.title}
+                    </h3>
+                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                      isSessionCompleted
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                        : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+                    }`}>
+                      {isSwapCompleted ? 'SWAP COMPLETED' : sess.status}
+                    </span>
                   </div>
-                ) : (
-                  <span className="text-xs text-textMuted">No video URL attached</span>
-                )}
 
-                {sess.status === 'SCHEDULED' && (
-                  <button
-                    onClick={() => updateStatusMutation.mutate({ id: sess.id, status: 'COMPLETED' })}
-                    className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-surfaceBorder text-xs font-semibold text-textMuted hover:text-textMain flex items-center gap-1 justify-center"
-                  >
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Mark Completed
-                  </button>
-                )}
+                  <p className="text-xs font-medium text-textMain leading-relaxed">
+                    {sess.description || 'Live coding walkthrough, topic explanation, and Q&A session.'}
+                  </p>
+
+                  <div className="space-y-1.5 text-xs text-textMuted">
+                    <p className="flex items-center gap-1.5 font-medium">
+                      <Clock className="w-3.5 h-3.5 text-blue-500" />
+                      {new Date(sess.scheduledAt).toLocaleString()} ({sess.durationMinutes} mins)
+                    </p>
+                    {isSwapCompleted ? (
+                      <p className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Skill Swap Completed & Verified
+                      </p>
+                    ) : (
+                      <p className="flex items-center gap-1.5 text-[11px] text-emerald-500 font-semibold">
+                        <ShieldCheck className="w-3.5 h-3.5" /> Instant Open Video Access (Active Swap)
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Video Call Action Bar */}
+                <div className="pt-4 border-t border-surfaceBorder flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                  {isSwapCompleted || sess.status === 'COMPLETED' ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        disabled
+                        className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 text-textMuted text-xs font-bold flex items-center gap-2 cursor-not-allowed opacity-75"
+                      >
+                        <Lock className="w-4 h-4 text-emerald-500" /> Session Closed (Swap Completed)
+                      </button>
+                    </div>
+                  ) : sess.meetingUrl ? (
+                    <div className="flex items-center gap-2">
+                      {/* Direct Launch Video Call & Call Request Push */}
+                      <button
+                        onClick={() => handleJoinCall(sess)}
+                        className="btn-primary text-xs font-semibold px-4 py-2 flex items-center gap-2 justify-center shadow-md"
+                      >
+                        <Video className="w-4 h-4 text-emerald-400" /> Join Call & Notify Partner
+                      </button>
+
+                      {/* External Link Option */}
+                      <a
+                        href={getCleanVideoUrl(sess.meetingUrl)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-2 rounded-lg bg-surface border border-surfaceBorder text-textMuted hover:text-textMain transition-colors"
+                        title="Open in new browser window (Google Meet / Zoom / Open WebRTC)"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-textMuted">No video URL attached</span>
+                  )}
+
+                  {!isSessionCompleted && sess.status === 'SCHEDULED' && (
+                    <button
+                      onClick={() => updateStatusMutation.mutate({ id: sess.id, status: 'COMPLETED' })}
+                      className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-surfaceBorder text-xs font-semibold text-textMuted hover:text-textMain flex items-center gap-1 justify-center"
+                    >
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Mark Completed
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -220,7 +240,7 @@ export default function SessionsPage() {
 
             <form onSubmit={handleCreateSession} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-textMuted mb-1">Select Skill Exchange Partner</label>
+                <label className="block text-xs font-semibold text-textMuted mb-1">Select Active Skill Exchange</label>
                 <select
                   required
                   value={swapRequestId}

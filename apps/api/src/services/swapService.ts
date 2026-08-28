@@ -1,5 +1,5 @@
 import { prisma } from '../config/prisma';
-import { CreateSwapRequestInput, SwapStatus, SkillType } from '@skillxchange/shared';
+import { CreateSwapRequestInput, SwapStatus, SkillType, SessionStatus } from '@skillxchange/shared';
 
 export class SwapService {
   public async createSwapRequest(senderId: string, input: CreateSwapRequestInput) {
@@ -173,6 +173,12 @@ export class SwapService {
       data: { status: SwapStatus.CANCELLED },
     });
 
+    // Mark sessions cancelled
+    await prisma.learningSession.updateMany({
+      where: { swapRequestId: swapId, status: SessionStatus.SCHEDULED },
+      data: { status: SessionStatus.CANCELLED },
+    });
+
     return updated;
   }
 
@@ -201,6 +207,12 @@ export class SwapService {
     const updated = await prisma.swapRequest.update({
       where: { id: swapId },
       data: { status: SwapStatus.COMPLETED },
+    });
+
+    // Automatically mark all remaining scheduled sessions as COMPLETED for this swap
+    await prisma.learningSession.updateMany({
+      where: { swapRequestId: swapId, status: SessionStatus.SCHEDULED },
+      data: { status: SessionStatus.COMPLETED },
     });
 
     // Update completed exchanges counter for both users
