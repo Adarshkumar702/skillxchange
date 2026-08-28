@@ -92,16 +92,23 @@ export class MatchingService {
       candidates = candidates.filter((c) => (c.profile?.reputationScore || 0) >= filters.minRating!);
     }
 
-    // Separate real registered users vs sample example seed profiles
-    const realCandidates = candidates.filter((c) => !c.email.endsWith('@example.com'));
-    const demoCandidates = candidates.filter((c) => c.email.endsWith('@example.com'));
+    // Identify registered users vs seed sample profiles
+    // Registered users are verified OR have non-seed emails
+    const seedEmails = ['student@example.com', 'alex@example.com', 'sarah@example.com', 'david@example.com'];
+    const isCandidateRealUser = (c: typeof candidates[0]) => {
+      if (c.isVerified) return true;
+      if (!seedEmails.includes(c.email.toLowerCase())) return true;
+      return false;
+    };
+
+    const realCandidates = candidates.filter((c) => isCandidateRealUser(c));
+    const demoCandidates = candidates.filter((c) => !isCandidateRealUser(c));
 
     // If onlyRealUsers filter is enabled OR real registered users exist, prioritize real users
     let finalCandidates = candidates;
     if (filters?.onlyRealUsers) {
       finalCandidates = realCandidates;
     } else if (realCandidates.length > 0) {
-      // Put real registered users first, then sample example profiles
       finalCandidates = [...realCandidates, ...demoCandidates];
     }
 
@@ -111,7 +118,7 @@ export class MatchingService {
     for (const candidate of finalCandidates) {
       if (!candidate.profile) continue;
 
-      const isRealUser = !candidate.email.endsWith('@example.com');
+      const isRealUser = isCandidateRealUser(candidate);
       const userBadge: 'VERIFIED_STUDENT' | 'SAMPLE_EXAMPLE' = isRealUser ? 'VERIFIED_STUDENT' : 'SAMPLE_EXAMPLE';
 
       const candTeaching = candidate.skills.filter((s) => s.type === SkillType.TEACHING);

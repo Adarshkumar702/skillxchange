@@ -2,30 +2,49 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../lib/authContext';
 import { ThemeToggle } from './theme-toggle';
-import { Sparkles, ArrowRight, Bell, ShieldCheck } from 'lucide-react';
+import { Sparkles, ArrowRight, Bell, ShieldCheck, ArrowLeft } from 'lucide-react';
 
 export function Navbar() {
   const { user, logout } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // Show Back Button on all pages except the Home / Landing page ("/")
+  const showBackButton = pathname !== '/';
 
   return (
     <nav className="sticky top-0 z-50 glass-panel border-b border-surfaceBorder px-6 py-3.5 shadow-sm">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
-        {/* Brand */}
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-9 h-9 rounded-xl bg-grey-900 dark:bg-grey-100 flex items-center justify-center shadow-md transition-transform group-hover:scale-105">
-            <Sparkles className="w-4 h-4 text-grey-100 dark:text-grey-900" />
-          </div>
-          <div>
-            <span className="font-extrabold text-lg tracking-tight text-textMain">
-              SkillXchange
-            </span>
-            <span className="hidden sm:inline-block ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-grey-200 dark:bg-grey-800 text-grey-700 dark:text-grey-300 border border-surfaceBorder">
-              Pro SaaS
-            </span>
-          </div>
-        </Link>
+        {/* Left Section: Back Button + Brand Logo */}
+        <div className="flex items-center gap-3">
+          {showBackButton && (
+            <button
+              onClick={() => router.back()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface border border-surfaceBorder text-xs font-bold text-textMuted hover:text-textMain hover:border-slate-400 transition-all shadow-sm active:scale-95"
+              title="Go Back"
+            >
+              <ArrowLeft className="w-4 h-4 text-blue-500" />
+              <span className="hidden sm:inline">Back</span>
+            </button>
+          )}
+
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-9 h-9 rounded-xl bg-grey-900 dark:bg-grey-100 flex items-center justify-center shadow-md transition-transform group-hover:scale-105">
+              <Sparkles className="w-4 h-4 text-grey-100 dark:text-grey-900" />
+            </div>
+            <div>
+              <span className="font-extrabold text-lg tracking-tight text-textMain">
+                SkillXchange
+              </span>
+              <span className="hidden sm:inline-block ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-grey-200 dark:bg-grey-800 text-grey-700 dark:text-grey-300 border border-surfaceBorder">
+                Pro SaaS
+              </span>
+            </div>
+          </Link>
+        </div>
 
         {/* Navigation Links */}
         <div className="hidden md:flex items-center gap-6 text-xs font-semibold text-textMuted">

@@ -17,6 +17,7 @@ export class AuthService {
         email: input.email,
         passwordHash,
         role: UserRole.STUDENT,
+        isVerified: true, // Real user registered via /register is Verified
         profile: {
           create: {
             fullName: input.fullName,
@@ -59,6 +60,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         role: user.role,
+        isVerified: user.isVerified,
         profile: user.profile,
         skills: user.skills,
       },
@@ -99,6 +101,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         role: user.role,
+        isVerified: user.isVerified,
         profile: user.profile,
         skills: user.skills,
       },
