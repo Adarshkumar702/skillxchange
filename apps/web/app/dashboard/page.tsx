@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { fetchApi } from '../../lib/apiClient';
@@ -21,6 +21,20 @@ import {
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const [deletedUserIds, setDeletedUserIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('skillxchange_deleted_users');
+        if (stored) {
+          setDeletedUserIds(JSON.parse(stored));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, []);
 
   // Fetch Recommended Matches
   const { data: matchesRes } = useQuery({
@@ -46,7 +60,14 @@ export default function DashboardPage() {
     queryFn: () => fetchApi('/placement/readiness'),
   });
 
-  const matches = matchesRes?.data || [];
+  const rawMatches = matchesRes?.data || [];
+  const matches = rawMatches.filter(
+    (m: any) =>
+      !deletedUserIds.includes(m.user.id) &&
+      !deletedUserIds.includes(m.user.email) &&
+      !deletedUserIds.includes(m.user.fullName)
+  );
+
   const activeSwaps = swapsRes?.data || [];
   const sessions = sessionsRes?.data || [];
   const placement = placementRes?.data;

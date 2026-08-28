@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchApi } from '../../../lib/apiClient';
 import { useAuth } from '../../../lib/authContext';
@@ -29,6 +29,7 @@ export default function DiscoverPage() {
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
   const [viewStudentModal, setViewStudentModal] = useState<any>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [deletedUserIds, setDeletedUserIds] = useState<string[]>([]);
 
   const [offeredSkillId, setOfferedSkillId] = useState('');
   const [requestedSkillId, setRequestedSkillId] = useState('');
@@ -36,6 +37,20 @@ export default function DiscoverPage() {
   const [swapSuccess, setSwapSuccess] = useState('');
   const [swapError, setSwapError] = useState('');
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Load deleted user IDs from localStorage to filter out deleted users from candidate list
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('skillxchange_deleted_users');
+        if (stored) {
+          setDeletedUserIds(JSON.parse(stored));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, []);
 
   // Helper to reliably classify Verified User vs Sample Profile
   const isUserVerified = (u: any) => {
@@ -57,7 +72,13 @@ export default function DiscoverPage() {
       ),
   });
 
-  const matches = matchesRes?.data || [];
+  const rawMatches = matchesRes?.data || [];
+  const matches = rawMatches.filter(
+    (m: any) =>
+      !deletedUserIds.includes(m.user.id) &&
+      !deletedUserIds.includes(m.user.email) &&
+      !deletedUserIds.includes(m.user.fullName)
+  );
 
   const handleSendSwap = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -292,7 +313,7 @@ export default function DiscoverPage() {
         </div>
       )}
 
-      {/* View Public Student Profile Modal (Strictly Excluding Phone, Email, Address) */}
+      {/* View Public Student Profile Modal */}
       {viewStudentModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="glass-panel p-6 rounded-2xl border border-surfaceBorder max-w-lg w-full space-y-5 shadow-2xl relative animate-in fade-in zoom-in-95">
