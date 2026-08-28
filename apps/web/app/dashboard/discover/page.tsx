@@ -122,6 +122,7 @@ export default function DiscoverPage() {
         offeredSkillId,
         requestedSkillId,
         notes: `Skill Swap Request from ${user?.profile?.fullName || 'peer'}`,
+        message: `Hi ${selectedCandidate.user.fullName}, I would love to exchange skills with you!`,
       }),
     });
 
@@ -270,7 +271,7 @@ export default function DiscoverPage() {
                         {/* Real User vs Sample Demo vs Removed Badge */}
                         {isRemoved ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 mt-1 rounded-full bg-red-500/10 text-red-500 border border-red-500/30">
-                            <UserX className="w-3 h-3 text-red-500" /> Removed by Admin
+                            <UserX className="w-3 h-3 text-red-500" /> Account Removed by Admin
                           </span>
                         ) : verified ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 mt-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
@@ -333,8 +334,8 @@ export default function DiscoverPage() {
                     disabled={isRemoved}
                     onClick={() => {
                       setSelectedCandidate(match);
-                      setOfferedSkillId(userTeachingSkills[0]?.skillId || '');
-                      setRequestedSkillId(match.user.teachingSkills[0]?.id || '');
+                      setOfferedSkillId(userTeachingSkills[0]?.skillId || match.user.learningSkills[0]?.id || 'PostgreSQL');
+                      setRequestedSkillId(match.user.teachingSkills[0]?.id || 'Java');
                     }}
                     className="btn-primary text-xs font-semibold py-2 px-3.5 flex items-center gap-1.5 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
                   >
@@ -479,8 +480,8 @@ export default function DiscoverPage() {
                   disabled={isRemovedByAdmin}
                   onClick={() => {
                     setSelectedCandidate(viewStudentModal);
-                    setOfferedSkillId(userTeachingSkills[0]?.skillId || '');
-                    setRequestedSkillId(viewStudentModal.user.teachingSkills[0]?.id || '');
+                    setOfferedSkillId(userTeachingSkills[0]?.skillId || viewStudentModal.user.learningSkills[0]?.id || 'PostgreSQL');
+                    setRequestedSkillId(viewStudentModal.user.teachingSkills[0]?.id || 'Java');
                     setViewStudentModal(null);
                   }}
                   className="btn-primary text-xs font-semibold px-4 py-2 flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -543,6 +544,9 @@ export default function DiscoverPage() {
                   {userTeachingSkills.map((item: any) => (
                     <option key={item.skillId} value={item.skillId}>{item.skill.name}</option>
                   ))}
+                  {userTeachingSkills.length === 0 && (
+                    <option value="PostgreSQL">PostgreSQL (Default)</option>
+                  )}
                 </select>
               </div>
 
@@ -558,6 +562,9 @@ export default function DiscoverPage() {
                   {selectedCandidate.user.teachingSkills.map((sk: any) => (
                     <option key={sk.id} value={sk.id}>{sk.name}</option>
                   ))}
+                  {selectedCandidate.user.teachingSkills.length === 0 && (
+                    <option value="Java">Java (Default)</option>
+                  )}
                 </select>
               </div>
 

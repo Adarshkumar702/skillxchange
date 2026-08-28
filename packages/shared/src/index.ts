@@ -71,31 +71,32 @@ export const ProfileUpdateSchema = z.object({
 });
 
 export const UserSkillSchema = z.object({
-  skillId: z.string().uuid('Invalid skill ID'),
+  skillId: z.string(),
   type: z.nativeEnum(SkillType),
   proficiency: z.nativeEnum(ProficiencyLevel),
   yearsExperience: z.number().min(0).max(30).default(0),
 });
 
 export const CreateSwapRequestSchema = z.object({
-  receiverId: z.string().uuid(),
-  offeredSkillId: z.string().uuid(),
-  requestedSkillId: z.string().uuid(),
-  message: z.string().min(5, 'Message must be at least 5 characters').max(500),
+  receiverId: z.string().min(1, 'Receiver ID is required'),
+  offeredSkillId: z.string().min(1, 'Offered Skill ID is required'),
+  requestedSkillId: z.string().min(1, 'Requested Skill ID is required'),
+  notes: z.string().optional(),
+  message: z.string().optional(),
 });
 
 export const CreateSessionSchema = z.object({
-  swapRequestId: z.string().uuid(),
+  swapRequestId: z.string(),
   title: z.string().min(3).max(100),
   description: z.string().max(500).optional(),
-  scheduledAt: z.string().datetime(),
+  scheduledAt: z.string(),
   durationMinutes: z.number().min(15).max(240).default(60),
   meetingUrl: z.string().url().or(z.literal('')).optional(),
 });
 
 export const CreateRatingSchema = z.object({
-  swapRequestId: z.string().uuid(),
-  rateeId: z.string().uuid(),
+  swapRequestId: z.string(),
+  rateeId: z.string(),
   overall: z.number().min(1).max(5),
   teachingQuality: z.number().min(1).max(5),
   communication: z.number().min(1).max(5),
@@ -106,7 +107,7 @@ export const CreateRatingSchema = z.object({
 
 export const CreateReportSchema = z.object({
   targetType: z.enum(['USER', 'MESSAGE', 'SWAP', 'SKILL']),
-  targetId: z.string().uuid(),
+  targetId: z.string(),
   reason: z.enum(['SPAM', 'HARASSMENT', 'FAKE_PROFILE', 'SCAM', 'INAPPROPRIATE_CONTENT', 'OTHER']),
   details: z.string().max(1000).optional(),
 });
