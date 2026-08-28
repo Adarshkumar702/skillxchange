@@ -15,17 +15,14 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e?: React.FormEvent, customEmail?: string, customPassword?: string) => {
-    if (e) e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError('');
     setLoading(true);
 
-    const submitEmail = customEmail || email;
-    const submitPassword = customPassword || password;
-
     const res = await fetchApi('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email: submitEmail, password: submitPassword }),
+      body: JSON.stringify({ email, password }),
     });
 
     setLoading(false);
@@ -42,10 +39,6 @@ export default function LoginPage() {
     } else {
       setError(res.message || 'Invalid email or password');
     }
-  };
-
-  const handleAdminLogin = () => {
-    handleSubmit(undefined, 'admin@adarsh.com', '1234');
   };
 
   return (
@@ -69,7 +62,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={(e) => handleSubmit(e)} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1.5">Email Address</label>
             <div className="relative">
@@ -109,16 +102,14 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Clean Admin Portal Sign-In Button (Without Displaying Credentials Text) */}
+        {/* Navigation Link to Dedicated Admin Login Page */}
         <div className="pt-2">
-          <button
-            type="button"
-            onClick={handleAdminLogin}
-            disabled={loading}
+          <Link
+            href="/admin/login"
             className="w-full py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-extrabold text-xs hover:bg-amber-500 hover:text-slate-900 transition-all flex items-center justify-center gap-2 shadow-sm"
           >
-            <ShieldCheck className="w-4 h-4" /> Sign In as Admin / Project Owner
-          </button>
+            <ShieldCheck className="w-4 h-4" /> Go to Admin / Project Owner Login Portal →
+          </Link>
         </div>
 
         <div className="pt-2 border-t border-surfaceBorder text-center space-y-2 text-xs">
