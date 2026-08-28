@@ -4,13 +4,14 @@ import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { fetchApi } from '../../../lib/apiClient';
 import { useAuth } from '../../../lib/authContext';
-import { Compass, Search, Star, Repeat, GraduationCap, CheckCircle, Zap, Shield, Share2, Copy, Check } from 'lucide-react';
+import { Compass, Search, Star, Repeat, GraduationCap, CheckCircle, Zap, Shield, Share2, Copy, Check, UserCheck, HelpCircle } from 'lucide-react';
 
 export default function DiscoverPage() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [universityFilter, setUniversityFilter] = useState('');
   const [minRatingFilter, setMinRatingFilter] = useState(0);
+  const [onlyRealUsers, setOnlyRealUsers] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
   // Send Swap Request Modal State
@@ -23,12 +24,13 @@ export default function DiscoverPage() {
 
   // Fetch Recommended Matches with Search & Filters
   const { data: matchesRes, isLoading } = useQuery({
-    queryKey: ['recommendedMatches', searchQuery, universityFilter, minRatingFilter],
+    queryKey: ['recommendedMatches', searchQuery, universityFilter, minRatingFilter, onlyRealUsers],
     queryFn: () => {
       let query = '/matches/recommended?';
       if (searchQuery) query += `search=${encodeURIComponent(searchQuery)}&`;
       if (universityFilter) query += `university=${encodeURIComponent(universityFilter)}&`;
       if (minRatingFilter > 0) query += `minRating=${minRatingFilter}&`;
+      if (onlyRealUsers) query += `onlyRealUsers=true&`;
       return fetchApi(query);
     },
   });
@@ -79,10 +81,10 @@ export default function DiscoverPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-xl font-extrabold text-textMain flex items-center gap-2">
-              <Compass className="w-5 h-5 text-blue-500" /> Discover Mentors & Friends
+              <Compass className="w-5 h-5 text-blue-500" /> Discover Mentors & Registered Peers
             </h1>
             <p className="text-xs text-textMuted">
-              Search peers by Name, Email, or University and send instant skill swap requests.
+              Search real registered students by Name, Email, or University.
             </p>
           </div>
 
@@ -96,16 +98,16 @@ export default function DiscoverPage() {
         </div>
 
         {/* Search & Filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2">
           {/* Main Name / Email Search Input */}
-          <div className="relative">
+          <div className="relative sm:col-span-2">
             <Search className="w-4 h-4 text-textMuted absolute left-3 top-2.5" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-2 rounded-lg bg-surface border border-surfaceBorder text-xs text-textMain focus:outline-none focus:border-slate-400"
-              placeholder="Search by Name or Email (e.g. Alex, Sarah)..."
+              placeholder="Search by Name or Email (e.g. Adarsh, Sarah)..."
             />
           </div>
 
@@ -117,21 +119,23 @@ export default function DiscoverPage() {
               value={universityFilter}
               onChange={(e) => setUniversityFilter(e.target.value)}
               className="w-full pl-9 pr-3 py-2 rounded-lg bg-surface border border-surfaceBorder text-xs text-textMain focus:outline-none focus:border-slate-400"
-              placeholder="Filter by University (e.g. Stanford)..."
+              placeholder="Filter by University..."
             />
           </div>
 
-          {/* Rating Filter */}
-          <div>
-            <select
-              value={minRatingFilter}
-              onChange={(e) => setMinRatingFilter(Number(e.target.value))}
-              className="w-full px-3 py-2 rounded-lg bg-surface border border-surfaceBorder text-xs text-textMain focus:outline-none focus:border-slate-400"
+          {/* User Type Toggle Filter */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setOnlyRealUsers(!onlyRealUsers)}
+              className={`w-full py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
+                onlyRealUsers
+                  ? 'bg-emerald-600 text-white border-emerald-500'
+                  : 'bg-surface border-surfaceBorder text-textMuted hover:text-textMain'
+              }`}
             >
-              <option value={0}>All Peer Ratings</option>
-              <option value={4.5}>4.5★ and above</option>
-              <option value={4.8}>4.8★ and above (Top Mentors)</option>
-            </select>
+              <UserCheck className="w-3.5 h-3.5" />
+              {onlyRealUsers ? 'Only Real Users' : 'All Profiles'}
+            </button>
           </div>
         </div>
       </div>
@@ -158,7 +162,7 @@ export default function DiscoverPage() {
           {matches.map((match: any) => (
             <div key={match.user.id} className="glass-card p-6 rounded-2xl space-y-5 flex flex-col justify-between relative overflow-hidden">
               <div className="space-y-4">
-                {/* Header with Avatar & Badge */}
+                {/* Header with Avatar & User Type Badge */}
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3.5">
                     <div className="relative">
@@ -176,7 +180,17 @@ export default function DiscoverPage() {
                       <p className="text-[11px] text-textMuted flex items-center gap-1">
                         <GraduationCap className="w-3.5 h-3.5 text-blue-500" /> {match.user.university}
                       </p>
-                      <p className="text-[10px] text-textMuted">{match.user.course} ('{match.user.graduationYear % 100})</p>
+                      
+                      {/* Real User vs Sample Demo Badge */}
+                      {match.user.isRealUser ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 mt-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          <CheckCircle className="w-3 h-3 text-emerald-500" /> Real Verified User
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 mt-1 rounded-full bg-slate-500/10 text-slate-500 dark:text-slate-400 border border-slate-500/20">
+                          <HelpCircle className="w-3 h-3" /> Sample Profile
+                        </span>
+                      )}
                     </div>
                   </div>
 

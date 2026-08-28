@@ -14,12 +14,14 @@ router.get('/recommended', async (req: AuthenticatedRequest, res: Response) => {
     const search = req.query.search as string | undefined;
     const skillId = req.query.skillId as string | undefined;
     const minRating = req.query.minRating ? parseFloat(req.query.minRating as string) : undefined;
+    const onlyRealUsers = req.query.onlyRealUsers === 'true';
 
     const matches = await matchingService.getMatchesForUser(req.user!.userId, 20, {
       university,
       search,
       skillId,
       minRating,
+      onlyRealUsers,
     });
     return sendSuccess(res, 'Recommended matches generated', matches);
   } catch (err: any) {

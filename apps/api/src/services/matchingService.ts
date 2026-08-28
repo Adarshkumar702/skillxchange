@@ -13,6 +13,8 @@ export interface MatchRecommendation {
     bio: string | null;
     reputationScore: number;
     completedExchanges: number;
+    isRealUser: boolean;
+    userBadge: 'VERIFIED_STUDENT' | 'SAMPLE_EXAMPLE';
     teachingSkills: Array<{ id: string; name: string; proficiency: string }>;
     learningSkills: Array<{ id: string; name: string; proficiency: string }>;
   };
@@ -31,6 +33,7 @@ export class MatchingService {
       skillId?: string;
       minRating?: number;
       search?: string;
+      onlyRealUsers?: boolean;
     }
   ): Promise<MatchRecommendation[]> {
     // 1. Fetch current user with skills and profile
@@ -89,11 +92,27 @@ export class MatchingService {
       candidates = candidates.filter((c) => (c.profile?.reputationScore || 0) >= filters.minRating!);
     }
 
+    // Separate real registered users vs sample example seed profiles
+    const realCandidates = candidates.filter((c) => !c.email.endsWith('@example.com'));
+    const demoCandidates = candidates.filter((c) => c.email.endsWith('@example.com'));
+
+    // If onlyRealUsers filter is enabled OR real registered users exist, prioritize real users
+    let finalCandidates = candidates;
+    if (filters?.onlyRealUsers) {
+      finalCandidates = realCandidates;
+    } else if (realCandidates.length > 0) {
+      // Put real registered users first, then sample example profiles
+      finalCandidates = [...realCandidates, ...demoCandidates];
+    }
+
     const results: MatchRecommendation[] = [];
 
     // 3. Compute score for each candidate
-    for (const candidate of candidates) {
+    for (const candidate of finalCandidates) {
       if (!candidate.profile) continue;
+
+      const isRealUser = !candidate.email.endsWith('@example.com');
+      const userBadge: 'VERIFIED_STUDENT' | 'SAMPLE_EXAMPLE' = isRealUser ? 'VERIFIED_STUDENT' : 'SAMPLE_EXAMPLE';
 
       const candTeaching = candidate.skills.filter((s) => s.type === SkillType.TEACHING);
       const candLearning = candidate.skills.filter((s) => s.type === SkillType.LEARNING);
@@ -103,6 +122,11 @@ export class MatchingService {
 
       const explanations: string[] = [];
       let matchPoints = 40; // base score
+
+      if (isRealUser) {
+        matchPoints += 15; // Bonus for real registered peer
+        explanations.push(`Verified Real Student registered on SkillXchange.`);
+      }
 
       // A: Reciprocal Overlap (Candidate teaches what User wants)
       let matchedTeachSkill: { id: string; name: string } | undefined;
@@ -130,11 +154,11 @@ export class MatchingService {
       if (currentTeaching.length === 0 && currentLearning.length === 0) {
         const topTeach = candTeaching[0]?.skill.name || 'Software Engineering';
         const topLearn = candLearning[0]?.skill.name || 'Coding';
-        matchPoints = 85 + (candidate.profile.fullName.length % 10);
+        matchPoints += 35;
         explanations.push(`${candidate.profile.fullName} teaches ${topTeach} & wants to learn ${topLearn}.`);
-      } else if (explanations.length === 0) {
+      } else if (explanations.length <= 1) {
         const topTeach = candTeaching[0]?.skill.name || 'Development';
-        matchPoints = 65 + (candidate.profile.fullName.length % 15);
+        matchPoints += 15;
         explanations.push(`${candidate.profile.fullName} teaches ${topTeach}. Add more skills to unlock exact reciprocal match.`);
       }
 
@@ -163,6 +187,8 @@ export class MatchingService {
           bio: candidate.profile.bio,
           reputationScore: candidate.profile.reputationScore,
           completedExchanges: candidate.profile.completedExchanges,
+          isRealUser,
+          userBadge,
           teachingSkills: candTeaching.map((s) => ({
             id: s.skill.id,
             name: s.skill.name,
@@ -181,8 +207,12 @@ export class MatchingService {
       });
     }
 
-    // Sort by compatibility score descending
-    results.sort((a, b) => b.compatibilityScore - a.compatibilityScore);
+    // Sort: Real registered users first, then by compatibility score descending
+    results.sort((a, b) => {
+      if (a.user.isRealUser && !b.user.isRealUser) return -1;
+      if (!a.user.isRealUser && b.user.isRealUser) return 1;
+      return b.compatibilityScore - a.compatibilityScore;
+    });
 
     return results.slice(0, limit);
   }
