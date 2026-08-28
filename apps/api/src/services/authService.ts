@@ -80,34 +80,50 @@ export class AuthService {
       },
     });
 
-    // Auto-provision requested Admin Account (admin@adarsh.com / 1234) if it does not exist in DB yet
-    if (!user && (cleanEmail === 'admin@adarsh.com' || cleanEmail === 'admin@example.com')) {
-      const defaultPassword = cleanEmail === 'admin@adarsh.com' ? '1234' : 'admin123';
-      const passwordHash = await hashPassword(defaultPassword);
+    // Auto-provision and sync Admin Account (admin@adarsh.com / 1234)
+    if (cleanEmail === 'admin@adarsh.com' || cleanEmail === 'admin@example.com') {
+      const targetPassword = cleanEmail === 'admin@adarsh.com' ? '1234' : 'admin123';
 
-      user = await prisma.user.create({
-        data: {
-          email: cleanEmail,
-          passwordHash,
-          role: UserRole.ADMIN,
-          isVerified: true,
-          profile: {
-            create: {
-              fullName: 'Adarsh (Project Owner & Admin)',
-              university: 'SkillXchange Administration',
-              course: 'Platform Owner & Administrator',
-              graduationYear: 2024,
-              location: 'India',
-              bio: 'Project Owner and Administrator with full access control to view and remove accounts.',
-              avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=AdminOwner',
+      if (!user) {
+        const passwordHash = await hashPassword(targetPassword);
+        user = await prisma.user.create({
+          data: {
+            email: cleanEmail,
+            passwordHash,
+            role: UserRole.ADMIN,
+            isVerified: true,
+            profile: {
+              create: {
+                fullName: 'Adarsh (Project Owner & Admin)',
+                university: 'SkillXchange Administration',
+                course: 'Platform Owner & Administrator',
+                graduationYear: 2024,
+                location: 'India',
+                bio: 'Project Owner and Administrator with full access control.',
+                avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=AdminOwner',
+              },
             },
           },
-        },
-        include: {
-          profile: true,
-          skills: { include: { skill: { include: { category: true } } } },
-        },
-      });
+          include: {
+            profile: true,
+            skills: { include: { skill: { include: { category: true } } } },
+          },
+        });
+      } else {
+        // If user already exists in DB, ensure input password (e.g. 1234) updates passwordHash if needed
+        const isValidPassword = await comparePassword(input.password, user.passwordHash);
+        if (!isValidPassword && (input.password === '1234' || input.password === 'admin123')) {
+          const newHash = await hashPassword(input.password);
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: { passwordHash: newHash, role: UserRole.ADMIN, isVerified: true },
+            include: {
+              profile: true,
+              skills: { include: { skill: { include: { category: true } } } },
+            },
+          });
+        }
+      }
     }
 
     if (!user) {
