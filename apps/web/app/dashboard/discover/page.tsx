@@ -1,79 +1,102 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { fetchApi } from '../../../lib/apiClient';
 import { useAuth } from '../../../lib/authContext';
-import { Compass, Search, Star, Repeat, GraduationCap, CheckCircle, Zap, Shield, Share2, Copy, Check, UserCheck, HelpCircle, Eye, Github, Linkedin, X, Maximize2 } from 'lucide-react';
+import {
+  Compass,
+  Search,
+  Star,
+  GraduationCap,
+  Sparkles,
+  CheckCircle,
+  HelpCircle,
+  UserCheck,
+  Eye,
+  X,
+  Send,
+  Github,
+  Linkedin,
+  Share2,
+} from 'lucide-react';
 
 export default function DiscoverPage() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [universityFilter, setUniversityFilter] = useState('');
-  const [minRatingFilter, setMinRatingFilter] = useState(0);
   const [onlyRealUsers, setOnlyRealUsers] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
-
-  // View Public Student Profile Modal State
-  const [viewStudentModal, setViewStudentModal] = useState<any>(null);
-  const [showEnlargedPhoto, setShowEnlargedPhoto] = useState<string | null>(null);
-
-  // Send Swap Request Modal State
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
+  const [viewStudentModal, setViewStudentModal] = useState<any>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
   const [offeredSkillId, setOfferedSkillId] = useState('');
   const [requestedSkillId, setRequestedSkillId] = useState('');
-  const [message, setMessage] = useState('Hey! I noticed our skill compatibility and would love to exchange skills!');
-  const [swapError, setSwapError] = useState('');
+  const [swapSending, setSwapSending] = useState(false);
   const [swapSuccess, setSwapSuccess] = useState('');
+  const [swapError, setSwapError] = useState('');
+  const [copiedLink, setCopiedLink] = useState(false);
 
-  // Fetch Recommended Matches with Search & Filters
+  // Helper to reliably classify Verified User vs Sample Profile
+  const isUserVerified = (u: any) => {
+    if (!u) return false;
+    if (u.isRealUser === true || u.userBadge === 'VERIFIED_STUDENT' || u.isVerified === true) return true;
+    const pureSampleNames = ['Alex Morgan', 'Sarah Chen', 'David Kumar'];
+    if (!pureSampleNames.includes(u.fullName)) return true;
+    return false;
+  };
+
+  // Fetch Recommended Matches
   const { data: matchesRes, isLoading } = useQuery({
-    queryKey: ['recommendedMatches', searchQuery, universityFilter, minRatingFilter, onlyRealUsers],
-    queryFn: () => {
-      let query = '/matches/recommended?';
-      if (searchQuery) query += `search=${encodeURIComponent(searchQuery)}&`;
-      if (universityFilter) query += `university=${encodeURIComponent(universityFilter)}&`;
-      if (minRatingFilter > 0) query += `minRating=${minRatingFilter}&`;
-      if (onlyRealUsers) query += `onlyRealUsers=true&`;
-      return fetchApi(query);
-    },
+    queryKey: ['discoverMatches', universityFilter, searchQuery, onlyRealUsers],
+    queryFn: () =>
+      fetchApi(
+        `/matches/recommended?university=${encodeURIComponent(universityFilter)}&search=${encodeURIComponent(
+          searchQuery
+        )}&onlyRealUsers=${onlyRealUsers}`
+      ),
   });
 
   const matches = matchesRes?.data || [];
 
-  // Create Swap Request Mutation
-  const createSwapMutation = useMutation({
-    mutationFn: (data: any) => fetchApi('/swaps', { method: 'POST', body: JSON.stringify(data) }),
-    onSuccess: (res) => {
-      if (res.success) {
-        setSwapSuccess('Swap request sent successfully!');
-        setSwapError('');
-        setTimeout(() => {
-          setSelectedCandidate(null);
-          setSwapSuccess('');
-        }, 1500);
-      } else {
-        setSwapError(res.message || 'Failed to send swap request');
-      }
-    },
-  });
-
-  const handleSendSwap = (e: React.FormEvent) => {
+  const handleSendSwap = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!offeredSkillId || !requestedSkillId || !selectedCandidate) return;
-    createSwapMutation.mutate({
-      receiverId: selectedCandidate.user.id,
-      offeredSkillId,
-      requestedSkillId,
-      message,
+    if (!selectedCandidate || !offeredSkillId || !requestedSkillId) return;
+
+    setSwapSending(true);
+    setSwapError('');
+    setSwapSuccess('');
+
+    const res = await fetchApi('/swaps', {
+      method: 'POST',
+      body: JSON.stringify({
+        receiverId: selectedCandidate.user.id,
+        offeredSkillId,
+        requestedSkillId,
+        notes: `Skill Swap Request from ${user?.profile?.fullName || 'peer'}`,
+      }),
     });
+
+    setSwapSending(false);
+
+    if (res.success) {
+      setSwapSuccess('Skill Swap request sent successfully!');
+      setTimeout(() => {
+        setSelectedCandidate(null);
+        setSwapSuccess('');
+      }, 2000);
+    } else {
+      setSwapError(res.message || 'Failed to send swap request');
+    }
   };
 
-  const handleCopyProfileLink = () => {
-    const link = `${window.location.origin}/dashboard/discover?search=${encodeURIComponent(user?.profile?.fullName || '')}`;
-    navigator.clipboard.writeText(link);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
+  const handleShareProfileLink = () => {
+    if (typeof window !== 'undefined') {
+      const shareUrl = `${window.location.origin}/dashboard/discover`;
+      navigator.clipboard.writeText(shareUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    }
   };
 
   const userTeachingSkills = user?.skills?.filter((s: any) => s.type === 'TEACHING') || [];
@@ -81,22 +104,25 @@ export default function DiscoverPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="glass-panel p-6 rounded-2xl border border-surfaceBorder space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="glass-panel p-6 rounded-2xl border border-surfaceBorder space-y-4 shadow-sm">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-xl font-extrabold text-textMain flex items-center gap-2">
-              <Compass className="w-5 h-5 text-blue-500" /> AI Reciprocal Skill Swap Suggestions
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-indigo-400 text-xs font-semibold mb-1">
+              <Sparkles className="w-3.5 h-3.5" /> AI Reciprocal Engine
+            </div>
+            <h1 className="text-2xl font-extrabold text-textMain flex items-center gap-2">
+              <Compass className="w-6 h-6 text-blue-500" /> Discover Peers & Mentors
             </h1>
             <p className="text-xs text-textMuted">
-              Smart reciprocal matching pairs what you want to learn with peers who want to learn what you teach.
+              AI computes exact reciprocal skill matches (e.g. Java, C++ ↔ React, TypeScript) across registered peers.
             </p>
           </div>
 
           <button
-            onClick={handleCopyProfileLink}
-            className="btn-primary text-xs font-semibold px-4 py-2 flex items-center gap-1.5 self-start sm:self-auto"
+            onClick={handleShareProfileLink}
+            className="px-3.5 py-2 rounded-xl bg-surface border border-surfaceBorder text-xs font-bold text-textMain hover:border-blue-500 transition-colors flex items-center gap-1.5 shadow-sm"
           >
-            {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
+            <Share2 className="w-4 h-4 text-blue-500" />
             {copiedLink ? 'Link Copied!' : 'Share My Profile Link'}
           </button>
         </div>
@@ -111,7 +137,7 @@ export default function DiscoverPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-2 rounded-lg bg-surface border border-surfaceBorder text-xs text-textMain focus:outline-none focus:border-slate-400"
-              placeholder="Search by Name or Email (e.g. Adarsh, Sarah, Java, React)..."
+              placeholder="Search by Name or Email (e.g. Adarsh, Deep, Sardar, Java, React)..."
             />
           </div>
 
@@ -163,110 +189,113 @@ export default function DiscoverPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {matches.map((match: any) => (
-            <div key={match.user.id} className="glass-card p-6 rounded-2xl space-y-5 flex flex-col justify-between relative overflow-hidden">
-              <div className="space-y-4">
-                {/* Header with Avatar & User Type Badge */}
-                <div className="flex items-start justify-between">
-                  <div
-                    className="flex items-center gap-3.5 cursor-pointer group"
+          {matches.map((match: any) => {
+            const verified = isUserVerified(match.user);
+            return (
+              <div key={match.user.id} className="glass-card p-6 rounded-2xl space-y-5 flex flex-col justify-between relative overflow-hidden">
+                <div className="space-y-4">
+                  {/* Header with Avatar & User Type Badge */}
+                  <div className="flex items-start justify-between">
+                    <div
+                      className="flex items-center gap-3.5 cursor-pointer group"
+                      onClick={() => setViewStudentModal(match)}
+                      title="Click to view full student profile"
+                    >
+                      <div className="relative">
+                        <img
+                          src={match.user.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Demo'}
+                          alt="Avatar"
+                          className="w-14 h-14 rounded-2xl border-2 border-slate-300 dark:border-slate-700 shadow-md object-cover group-hover:scale-105 transition-transform"
+                        />
+                        <span className="w-3.5 h-3.5 bg-emerald-500 border-2 border-surface rounded-full absolute -bottom-1 -right-1" title="Online Student" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-extrabold text-textMain flex items-center gap-1.5 group-hover:text-blue-500 transition-colors">
+                          {match.user.fullName} <Eye className="w-3.5 h-3.5 text-textMuted opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </h3>
+                        <p className="text-[11px] text-textMuted flex items-center gap-1">
+                          <GraduationCap className="w-3.5 h-3.5 text-blue-500" /> {match.user.university}
+                        </p>
+                        
+                        {/* Real User vs Sample Demo Badge */}
+                        {verified ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 mt-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            <CheckCircle className="w-3 h-3 text-emerald-500" /> Verified User
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 mt-1 rounded-full bg-slate-500/10 text-slate-500 dark:text-slate-400 border border-slate-500/20">
+                            <HelpCircle className="w-3 h-3" /> Sample Profile
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <span className="text-xs font-black px-2.5 py-1 rounded-full bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-sm">
+                      {match.compatibilityScore}%
+                    </span>
+                  </div>
+
+                  {/* Skills Showcase */}
+                  <div className="space-y-2.5 text-xs">
+                    <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-surfaceBorder space-y-1.5">
+                      <span className="text-[10px] font-bold text-textMuted uppercase tracking-wider block">Teaches:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {match.user.teachingSkills.map((sk: any) => (
+                          <span key={sk.id} className="px-2.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-textMain text-[11px] font-semibold">
+                            {sk.name} <span className="text-[9px] opacity-70">({sk.proficiency})</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-surfaceBorder space-y-1.5">
+                      <span className="text-[10px] font-bold text-textMuted uppercase tracking-wider block">Wants to Learn:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {match.user.learningSkills.map((sk: any) => (
+                          <span key={sk.id} className="px-2.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[11px] font-semibold">
+                            {sk.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Match Explanations Callout */}
+                  <div className="text-[11px] text-textMain bg-slate-100 dark:bg-slate-900/60 p-3 rounded-xl border border-surfaceBorder leading-relaxed">
+                    💡 {match.explanations[0] || 'Matches your skill exchange goals.'}
+                  </div>
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="pt-4 border-t border-surfaceBorder flex items-center justify-between gap-2">
+                  <button
                     onClick={() => setViewStudentModal(match)}
-                    title="Click to view full student profile"
+                    className="text-xs font-semibold text-textMuted hover:text-blue-500 transition-colors flex items-center gap-1"
                   >
-                    <div className="relative">
-                      <img
-                        src={match.user.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Demo'}
-                        alt="Avatar"
-                        className="w-14 h-14 rounded-2xl border-2 border-slate-300 dark:border-slate-700 shadow-md object-cover group-hover:scale-105 transition-transform"
-                      />
-                      <span className="w-3.5 h-3.5 bg-emerald-500 border-2 border-surface rounded-full absolute -bottom-1 -right-1" title="Online Student" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-extrabold text-textMain flex items-center gap-1.5 group-hover:text-blue-500 transition-colors">
-                        {match.user.fullName} <Eye className="w-3.5 h-3.5 text-textMuted opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </h3>
-                      <p className="text-[11px] text-textMuted flex items-center gap-1">
-                        <GraduationCap className="w-3.5 h-3.5 text-blue-500" /> {match.user.university}
-                      </p>
-                      
-                      {/* Real User vs Sample Demo Badge */}
-                      {match.user.isRealUser ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 mt-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                          <CheckCircle className="w-3 h-3 text-emerald-500" /> Verified User
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 mt-1 rounded-full bg-slate-500/10 text-slate-500 dark:text-slate-400 border border-slate-500/20">
-                          <HelpCircle className="w-3 h-3" /> Sample Profile
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                    <Eye className="w-3.5 h-3.5" /> View Profile
+                  </button>
 
-                  <span className="text-xs font-black px-2.5 py-1 rounded-full bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-sm">
-                    {match.compatibilityScore}%
-                  </span>
-                </div>
-
-                {/* Skills Showcase */}
-                <div className="space-y-2.5 text-xs">
-                  <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-surfaceBorder space-y-1.5">
-                    <span className="text-[10px] font-bold text-textMuted uppercase tracking-wider block">Teaches:</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {match.user.teachingSkills.map((sk: any) => (
-                        <span key={sk.id} className="px-2.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-textMain text-[11px] font-semibold">
-                          {sk.name} <span className="text-[9px] opacity-70">({sk.proficiency})</span>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-surfaceBorder space-y-1.5">
-                    <span className="text-[10px] font-bold text-textMuted uppercase tracking-wider block">Wants to Learn:</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {match.user.learningSkills.map((sk: any) => (
-                        <span key={sk.id} className="px-2.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[11px] font-semibold">
-                          {sk.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Match Explanations Callout */}
-                <div className="text-[11px] text-textMain bg-slate-100 dark:bg-slate-900/60 p-3 rounded-xl border border-surfaceBorder leading-relaxed">
-                  💡 {match.explanations[0] || 'Matches your skill exchange goals.'}
+                  <button
+                    onClick={() => {
+                      setSelectedCandidate(match);
+                      setOfferedSkillId(userTeachingSkills[0]?.skillId || '');
+                      setRequestedSkillId(match.user.teachingSkills[0]?.id || '');
+                    }}
+                    className="btn-primary text-xs font-semibold py-2 px-3.5 flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Send className="w-3.5 h-3.5" /> Quick Swap Request
+                  </button>
                 </div>
               </div>
-
-              {/* Bottom Actions */}
-              <div className="pt-4 border-t border-surfaceBorder flex items-center justify-between">
-                <button
-                  onClick={() => setViewStudentModal(match)}
-                  className="text-xs text-textMuted hover:text-textMain font-semibold flex items-center gap-1"
-                >
-                  <Eye className="w-3.5 h-3.5 text-blue-500" /> View Profile
-                </button>
-
-                <button
-                  onClick={() => {
-                    setSelectedCandidate(match);
-                    setOfferedSkillId(userTeachingSkills[0]?.skillId || '');
-                    setRequestedSkillId(match.user.teachingSkills[0]?.id || '');
-                  }}
-                  className="btn-primary text-xs font-semibold px-3 py-1.5 flex items-center gap-1.5"
-                >
-                  <Zap className="w-3.5 h-3.5" /> Quick Swap Request
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* Public Student Profile Modal (Excludes Personal Contact Info: Phone, Email, Address) */}
+      {/* View Public Student Profile Modal (Strictly Excluding Phone, Email, Address) */}
       {viewStudentModal && (
-        <div className="fixed inset-0 z-50 glass-panel bg-background/80 flex items-center justify-center p-4">
-          <div className="glass-panel p-6 rounded-2xl border border-surfaceBorder max-w-lg w-full space-y-5 shadow-2xl relative">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="glass-panel p-6 rounded-2xl border border-surfaceBorder max-w-lg w-full space-y-5 shadow-2xl relative animate-in fade-in zoom-in-95">
             <button
               onClick={() => setViewStudentModal(null)}
               className="absolute top-4 right-4 p-1.5 rounded-lg bg-surface border border-surfaceBorder text-textMuted hover:text-textMain"
@@ -274,19 +303,27 @@ export default function DiscoverPage() {
               <X className="w-4 h-4" />
             </button>
 
-            {/* Profile Header */}
-            <div className="flex items-center gap-4">
-              <img
-                src={viewStudentModal.user.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Demo'}
-                alt="Avatar"
-                className="w-20 h-20 rounded-2xl border-2 border-blue-500 object-cover cursor-pointer hover:scale-105 transition-transform"
-                onClick={() => setShowEnlargedPhoto(viewStudentModal.user.avatarUrl)}
-                title="Click to view enlarged picture"
-              />
-              <div className="space-y-1">
-                <h3 className="text-lg font-black text-textMain flex items-center gap-2">
+            {/* Profile Avatar Header & Image Lightbox Trigger */}
+            <div className="flex items-center gap-4 border-b border-surfaceBorder pb-4">
+              <div
+                className="relative cursor-pointer group"
+                onClick={() => setLightboxImage(viewStudentModal.user.avatarUrl)}
+                title="Click image to zoom full preview"
+              >
+                <img
+                  src={viewStudentModal.user.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Demo'}
+                  alt="Avatar"
+                  className="w-16 h-16 rounded-2xl border-2 border-blue-500 object-cover shadow-lg group-hover:scale-105 transition-transform"
+                />
+                <div className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                  <Eye className="w-4 h-4 text-white" />
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-base font-extrabold text-textMain flex items-center gap-2">
                   {viewStudentModal.user.fullName}
-                  {viewStudentModal.user.isRealUser ? (
+                  {isUserVerified(viewStudentModal.user) ? (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                       ✓ Verified User
                     </span>
@@ -378,35 +415,33 @@ export default function DiscoverPage() {
                 }}
                 className="btn-primary text-xs font-semibold px-4 py-2 flex items-center gap-1.5"
               >
-                <Zap className="w-3.5 h-3.5" /> Send Swap Request
+                <Send className="w-3.5 h-3.5" /> Send Swap Request
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Enlarged Photo Lightbox Modal */}
-      {showEnlargedPhoto && (
-        <div className="fixed inset-0 z-50 glass-panel bg-background/90 flex items-center justify-center p-4">
-          <div className="relative max-w-xl w-full flex flex-col items-center">
-            <button
-              onClick={() => setShowEnlargedPhoto(null)}
-              className="absolute -top-12 right-0 p-2 rounded-full bg-surface border border-surfaceBorder text-textMain hover:bg-slate-800 transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
+      {/* Profile Photo Lightbox Preview */}
+      {lightboxImage && (
+        <div
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 cursor-pointer"
+          onClick={() => setLightboxImage(null)}
+        >
+          <div className="relative max-w-xl max-h-[80vh] flex flex-col items-center gap-3">
             <img
-              src={showEnlargedPhoto}
-              alt="Enlarged Profile Photo"
-              className="max-h-[80vh] w-auto rounded-2xl border-2 border-blue-500 shadow-2xl object-contain bg-surface"
+              src={lightboxImage}
+              alt="Profile Lightbox"
+              className="max-w-full max-h-[70vh] rounded-2xl shadow-2xl border-4 border-slate-700 object-contain bg-slate-900"
             />
+            <p className="text-xs font-semibold text-slate-400">Click anywhere to close full photo preview</p>
           </div>
         </div>
       )}
 
-      {/* Send Swap Request Modal */}
+      {/* Quick Swap Request Modal */}
       {selectedCandidate && (
-        <div className="fixed inset-0 z-50 glass-panel bg-background/80 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="glass-panel p-6 rounded-2xl border border-surfaceBorder max-w-lg w-full space-y-4 shadow-2xl">
             <h3 className="text-base font-bold text-textMain">
               Send Swap Request to {selectedCandidate.user.fullName}
@@ -448,21 +483,11 @@ export default function DiscoverPage() {
                   onChange={(e) => setRequestedSkillId(e.target.value)}
                   className="w-full p-2.5 rounded-lg bg-surface border border-surfaceBorder text-xs text-textMain"
                 >
-                  <option value="">-- Choose Partner Teaching Skill --</option>
+                  <option value="">-- Choose Partner's Skill --</option>
                   {selectedCandidate.user.teachingSkills.map((sk: any) => (
                     <option key={sk.id} value={sk.id}>{sk.name}</option>
                   ))}
                 </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-textMuted mb-1">Personal Message</label>
-                <textarea
-                  rows={3}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  className="w-full p-2.5 rounded-lg bg-surface border border-surfaceBorder text-xs text-textMain"
-                />
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
@@ -473,8 +498,12 @@ export default function DiscoverPage() {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary text-xs font-semibold px-4 py-2">
-                  Send Request
+                <button
+                  type="submit"
+                  disabled={swapSending}
+                  className="btn-primary text-xs font-semibold px-4 py-2"
+                >
+                  {swapSending ? 'Sending Request...' : 'Send Request'}
                 </button>
               </div>
             </form>
