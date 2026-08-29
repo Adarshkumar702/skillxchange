@@ -15,9 +15,7 @@ import {
   AlertCircle,
   AlertTriangle,
   UserX,
-  Flag,
   X,
-  ShieldAlert,
 } from 'lucide-react';
 
 export default function DiscoverPage() {
@@ -28,10 +26,6 @@ export default function DiscoverPage() {
   const [swapSuccessMsg, setSwapSuccessMsg] = useState<string>('');
   const [swapErrorMsg, setSwapErrorMsg] = useState<string>('');
   const [viewStudentModal, setViewStudentModal] = useState<any>(null);
-  const [reportModalUser, setReportModalUser] = useState<any>(null);
-  const [reportReason, setReportReason] = useState<string>('SPAM');
-  const [reportDetails, setReportDetails] = useState<string>('');
-  const [reportSuccessMsg, setReportSuccessMsg] = useState<string>('');
 
   // Track deleted user identifiers to mark purged users
   const [deletedUserSet, setDeletedUserSet] = useState<Set<string>>(new Set());
@@ -95,42 +89,10 @@ export default function DiscoverPage() {
     },
   });
 
-  // Submit Report Mutation
-  const submitReportMutation = useMutation({
-    mutationFn: (data: { targetType: string; targetId: string; reason: string; details: string }) =>
-      fetchApi('/admin/reports', { method: 'POST', body: JSON.stringify(data) }),
-    onSuccess: (_, variables) => {
-      setReportSuccessMsg('Report submitted to Admin Moderation Queue. Thank you for keeping SkillXchange safe!');
-      setTimeout(() => setReportSuccessMsg(''), 5000);
-
-      // Save locally to persist report in localStorage
-      if (typeof window !== 'undefined') {
-        try {
-          const existing = JSON.parse(localStorage.getItem('skillxchange_user_reports') || '[]');
-          const newReport = {
-            id: `rep_${Date.now()}`,
-            targetId: variables.targetId,
-            targetUser: reportModalUser,
-            reason: variables.reason,
-            details: variables.details,
-            status: 'PENDING',
-            createdAt: new Date().toISOString(),
-          };
-          localStorage.setItem('skillxchange_user_reports', JSON.stringify([newReport, ...existing]));
-        } catch (e) {
-          console.error(e);
-        }
-      }
-
-      setReportModalUser(null);
-      setReportDetails('');
-    },
-  });
-
   const matches = matchesRes?.data || [];
   const categories = categoriesRes?.data || [];
 
-  // Robust Default Candidates Fallback to guarantee matches display
+  // Robust Default Candidates Fallback to guarantee discover matches section displays cleanly
   const defaultMatches = [
     {
       user: {
@@ -221,7 +183,7 @@ export default function DiscoverPage() {
 
   const rawMatches = matches.length > 0 ? matches : defaultMatches;
 
-  // Filter matches by minMatchScore (normalizing compatibilityScore and matchScore)
+  // Filter matches by minMatchScore
   const filteredMatches = rawMatches.filter((match: any) => {
     const score = match.matchScore ?? match.compatibilityScore ?? 85;
     return score >= minMatchScore;
@@ -241,17 +203,6 @@ export default function DiscoverPage() {
       offeredSkillId: offeredSkill?.id || 'sk_python_202',
       requestedSkillId: requestedSkill?.id || 'sk_react_101',
       message: `Hi ${match.user.fullName}, I noticed our ${match.compatibilityScore || match.matchScore || 90}% reciprocal match! Would love to swap skills.`,
-    });
-  };
-
-  const handleSubmitReport = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!reportModalUser) return;
-    submitReportMutation.mutate({
-      targetType: 'USER',
-      targetId: reportModalUser.id,
-      reason: reportReason,
-      details: reportDetails,
     });
   };
 
@@ -276,12 +227,6 @@ export default function DiscoverPage() {
           <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-2">
             <CheckCircle className="w-4.5 h-4.5 flex-shrink-0" />
             <span>{swapSuccessMsg}</span>
-          </div>
-        )}
-        {reportSuccessMsg && (
-          <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-600 dark:text-blue-400 text-xs font-bold flex items-center gap-2">
-            <CheckCircle className="w-4.5 h-4.5 flex-shrink-0" />
-            <span>{reportSuccessMsg}</span>
           </div>
         )}
         {swapErrorMsg && (
@@ -537,113 +482,25 @@ export default function DiscoverPage() {
             </div>
 
             {/* Modal Action Bar */}
-            <div className="flex items-center justify-between pt-3 border-t border-surfaceBorder">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-surfaceBorder">
               <button
-                onClick={() => {
-                  setReportModalUser(viewStudentModal.user);
-                  setViewStudentModal(null);
-                }}
-                className="px-3.5 py-2 rounded-xl bg-red-500/10 text-red-500 border border-red-500/30 text-xs font-extrabold hover:bg-red-500 hover:text-white transition-all flex items-center gap-1.5 shadow-sm"
+                onClick={() => setViewStudentModal(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-textMuted hover:text-textMain"
               >
-                <Flag className="w-3.5 h-3.5" /> Report Account
+                Close
               </button>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setViewStudentModal(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-textMuted hover:text-textMain"
-                >
-                  Close
-                </button>
-                <button
-                  disabled={checkIsRemovedByAdmin(viewStudentModal.user)}
-                  onClick={() => handleSendSwap(viewStudentModal)}
-                  className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md ${
-                    checkIsRemovedByAdmin(viewStudentModal.user)
-                      ? 'bg-slate-300 dark:bg-slate-800 text-slate-500 border border-slate-400 cursor-not-allowed opacity-60'
-                      : 'bg-slate-950 dark:bg-white text-white dark:text-slate-950 hover:bg-slate-800 dark:hover:bg-slate-100'
-                  }`}
-                >
-                  <Send className="w-3.5 h-3.5" /> Send Swap Request
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* REPORT SUSPICIOUS ACCOUNT MODAL */}
-      {reportModalUser && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-950 border-2 border-red-500/40 p-6 rounded-3xl max-w-md w-full space-y-5 shadow-2xl relative animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <div className="flex items-center gap-2.5 text-red-400">
-                <ShieldAlert className="w-6 h-6" />
-                <div>
-                  <h3 className="text-base font-black text-white">Report Suspicious Account</h3>
-                  <p className="text-[11px] text-slate-400">Submits incident to Admin Moderation Queue</p>
-                </div>
-              </div>
-              <button onClick={() => setReportModalUser(null)} className="p-1 rounded-lg text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
+              <button
+                disabled={checkIsRemovedByAdmin(viewStudentModal.user)}
+                onClick={() => handleSendSwap(viewStudentModal)}
+                className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md ${
+                  checkIsRemovedByAdmin(viewStudentModal.user)
+                    ? 'bg-slate-300 dark:bg-slate-800 text-slate-500 border border-slate-400 cursor-not-allowed opacity-60'
+                    : 'bg-slate-950 dark:bg-white text-white dark:text-slate-950 hover:bg-slate-800 dark:hover:bg-slate-100'
+                }`}
+              >
+                <Send className="w-3.5 h-3.5" /> Send Swap Request
               </button>
             </div>
-
-            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-300 flex items-center gap-2">
-              <img
-                src={reportModalUser.avatarUrl || reportModalUser.profile?.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Demo'}
-                alt="Avatar"
-                className="w-7 h-7 rounded-full border border-slate-700 object-cover"
-              />
-              <span>Report Target: <strong className="text-white">{reportModalUser.fullName || reportModalUser.profile?.fullName || reportModalUser.email}</strong></span>
-            </div>
-
-            <form onSubmit={handleSubmitReport} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">Violation Reason</label>
-                <select
-                  value={reportReason}
-                  onChange={(e) => setReportReason(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-white focus:outline-none focus:border-red-500"
-                >
-                  <option value="SPAM">Spam or Unwanted Commercial Advertising</option>
-                  <option value="FAKE_PROFILE">Fake Profile / Impersonation / Misleading Skills</option>
-                  <option value="HARASSMENT">Harassment, Bullying, or Inappropriate Behavior</option>
-                  <option value="SCAM">Scam or Financial Solicitations</option>
-                  <option value="INAPPROPRIATE_CONTENT">Inappropriate Language or Media Content</option>
-                  <option value="OTHER">Other Terms of Service Violation</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">Incident Details / Evidence Description</label>
-                <textarea
-                  required
-                  rows={3}
-                  value={reportDetails}
-                  onChange={(e) => setReportDetails(e.target.value)}
-                  placeholder="Explain why this account is suspicious or violates platform safety guidelines..."
-                  className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500 leading-relaxed"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setReportModalUser(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitReportMutation.isPending}
-                  className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs shadow-lg flex items-center gap-1.5"
-                >
-                  <Flag className="w-3.5 h-3.5" /> Submit Report to Admin
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

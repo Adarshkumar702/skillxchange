@@ -8,7 +8,6 @@ import {
   Users,
   Repeat,
   Star,
-  AlertTriangle,
   Trash2,
   Search,
   CheckCircle,
@@ -16,8 +15,6 @@ import {
   UserX,
   X,
   RotateCcw,
-  Flag,
-  ShieldAlert,
   RefreshCw,
 } from 'lucide-react';
 
@@ -28,46 +25,14 @@ export default function AdminPage() {
   const [removeSuccessMsg, setRemoveSuccessMsg] = useState('');
   const [deletedUserIds, setDeletedUserIds] = useState<string[]>([]);
   const [showRemovedModal, setShowRemovedModal] = useState(false);
-  const [localReports, setLocalReports] = useState<any[]>([]);
 
-  // Load deleted user IDs & local user reports from localStorage on mount
+  // Load deleted user IDs from localStorage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
         const storedDeleted = localStorage.getItem('skillxchange_deleted_users');
         if (storedDeleted) {
           setDeletedUserIds(JSON.parse(storedDeleted));
-        }
-
-        const storedReports = localStorage.getItem('skillxchange_user_reports');
-        if (storedReports) {
-          setLocalReports(JSON.parse(storedReports));
-        } else {
-          // Default initial sample reports for testing
-          const initialReports = [
-            {
-              id: 'rep_sample_01',
-              targetId: 'usr_sarah_119d6c',
-              targetUser: { id: 'usr_sarah_119d6c', email: 'sarah.chen@stanford.edu', profile: { fullName: 'Sarah Chen' } },
-              reporter: { email: 'hardik@paruluniversity.edu', profile: { fullName: 'Hardik Pandya' } },
-              reason: 'FAKE_PROFILE',
-              details: 'User is posting fake advanced skill certifications and spamming swap requests without responding to messages.',
-              status: 'PENDING',
-              createdAt: new Date(Date.now() - 3600000).toISOString(),
-            },
-            {
-              id: 'rep_sample_02',
-              targetId: 'usr_alex_332b8e',
-              targetUser: { id: 'usr_alex_332b8e', email: 'alex.morgan@stanford.edu', profile: { fullName: 'Alex Morgan' } },
-              reporter: { email: 'deep@stanford.edu', profile: { fullName: 'Deep' } },
-              reason: 'SPAM',
-              details: 'Sending automated promotional text in video call chat sessions.',
-              status: 'PENDING',
-              createdAt: new Date(Date.now() - 7200000).toISOString(),
-            },
-          ];
-          setLocalReports(initialReports);
-          localStorage.setItem('skillxchange_user_reports', JSON.stringify(initialReports));
         }
       } catch (e) {
         console.error(e);
@@ -115,18 +80,6 @@ export default function AdminPage() {
     queryKey: ['adminUsersList', userSearch],
     queryFn: () => fetchApi(`/admin/users?search=${encodeURIComponent(userSearch)}`),
   });
-
-  // Fetch content reports from backend server
-  const { data: serverReportsRes } = useQuery({
-    queryKey: ['adminReports'],
-    queryFn: () => fetchApi('/admin/reports'),
-  });
-
-  // Combine server & local reports
-  const serverReports = serverReportsRes?.data || [];
-  const allReports = [...serverReports, ...localReports].filter(
-    (v, i, a) => a.findIndex((t) => t.id === v.id) === i
-  );
 
   // Delete / Remove User Mutation
   const deleteUserMutation = useMutation({
@@ -178,16 +131,6 @@ export default function AdminPage() {
 
       deleteUserMutation.mutate(id || 'usr_sarah_119d6c');
     }
-  };
-
-  const handleDismissReport = (reportId: string) => {
-    const updated = localReports.map((rep) => (rep.id === reportId ? { ...rep, status: 'DISMISSED' } : rep));
-    setLocalReports(updated);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('skillxchange_user_reports', JSON.stringify(updated));
-    }
-    setRemoveSuccessMsg('Report marked as dismissed.');
-    setTimeout(() => setRemoveSuccessMsg(''), 4000);
   };
 
   const analytics = analyticsRes?.data?.overview || {
@@ -245,7 +188,7 @@ export default function AdminPage() {
             Platform Command Terminal
           </h1>
           <p className="text-xs text-slate-400 max-w-xl leading-relaxed">
-            Monitor real-time user metrics, manage account purges, review student violation reports, and enforce platform security policies.
+            Monitor real-time user metrics, manage account purges, and enforce platform security policies.
           </p>
         </div>
 
@@ -269,7 +212,7 @@ export default function AdminPage() {
       )}
 
       {/* Analytics KPI Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2 shadow-md">
           <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
             <span>Total Active Users</span>
@@ -286,15 +229,6 @@ export default function AdminPage() {
           </div>
           <p className="text-3xl font-black text-white">{analytics.totalSwaps}</p>
           <p className="text-[11px] text-emerald-400 font-bold">✓ {analytics.completedSwaps} Verified Exchanges</p>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2 shadow-md">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
-            <span>User Reports Queue</span>
-            <ShieldAlert className="w-4 h-4 text-red-400" />
-          </div>
-          <p className="text-3xl font-black text-red-400">{allReports.length}</p>
-          <p className="text-[11px] text-amber-400 font-bold">⚠️ Action Required by Admin</p>
         </div>
 
         <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2 shadow-md">
@@ -459,98 +393,24 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* MODERATION QUEUE & USER REPORTS CARD */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* PLATFORM USER REPORTS MODERATION QUEUE */}
-        <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <h3 className="text-sm font-black text-white flex items-center gap-2">
-              <ShieldAlert className="w-4.5 h-4.5 text-red-400" /> Suspicious User Account Reports Queue
-            </h3>
-            <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/40">
-              {allReports.length} Reports
-            </span>
+      {/* System Security Audit Stream */}
+      <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
+        <h3 className="text-sm font-black text-white flex items-center gap-2">
+          <Activity className="w-4 h-4 text-emerald-400" /> System Audit & Security Event Feed
+        </h3>
+
+        <div className="space-y-2.5 font-mono text-[11px] text-slate-300">
+          <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+            <span className="text-amber-400">✓ Account Registry: Purged users set active ({removedUsersList.length} blocked)</span>
+            <span className="text-[10px] text-slate-500">1 min ago</span>
           </div>
-
-          {allReports.length === 0 ? (
-            <div className="p-8 text-center border border-dashed border-slate-800 rounded-xl space-y-1">
-              <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto opacity-80" />
-              <p className="text-xs font-bold text-slate-300">Moderation Queue Clean</p>
-              <p className="text-[11px] text-slate-500">No reported suspicious accounts requiring review.</p>
-            </div>
-          ) : (
-            <div className="space-y-3.5 max-h-[460px] overflow-y-auto custom-scrollbar pr-1">
-              {allReports.map((rep: any) => {
-                const targetName = rep.targetUser?.profile?.fullName || rep.targetUser?.email || rep.targetId;
-                const reporterName = rep.reporter?.profile?.fullName || rep.reporter?.email || 'Anonymous Student';
-
-                return (
-                  <div key={rep.id} className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 shadow-md">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-0.5">
-                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Reported User:</span>
-                        <h4 className="text-sm font-black text-white flex items-center gap-1.5">
-                          <UserX className="w-4 h-4 text-red-400" /> {targetName}
-                        </h4>
-                      </div>
-
-                      <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border uppercase ${
-                        rep.reason === 'FAKE_PROFILE' || rep.reason === 'SCAM'
-                          ? 'bg-red-500/20 text-red-400 border-red-500/40'
-                          : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                      }`}>
-                        {rep.reason}
-                      </span>
-                    </div>
-
-                    <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 leading-relaxed font-medium">
-                      "{rep.details || 'Suspicious platform behavior reported by student user.'}"
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] pt-1 text-slate-400 border-t border-slate-800/80">
-                      <span>Submitted by: <strong className="text-slate-200">{reporterName}</strong></span>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleDismissReport(rep.id)}
-                          className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors"
-                        >
-                          Dismiss
-                        </button>
-                        <button
-                          onClick={() => handleRemoveUser({ id: rep.targetId, email: rep.targetUser?.email, fullName: targetName })}
-                          className="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-black shadow transition-all flex items-center gap-1"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" /> Purge Account
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* System Security Audit Stream */}
-        <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
-          <h3 className="text-sm font-black text-white flex items-center gap-2">
-            <Activity className="w-4 h-4 text-emerald-400" /> System Audit & Security Event Feed
-          </h3>
-
-          <div className="space-y-2.5 font-mono text-[11px] text-slate-300">
-            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-              <span className="text-emerald-400">✓ User Moderation: Active reports queue synchronized</span>
-              <span className="text-[10px] text-slate-500">Just now</span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-              <span className="text-amber-400">✓ Account Registry: Purged users set active ({removedUsersList.length} blocked)</span>
-              <span className="text-[10px] text-slate-500">1 min ago</span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-              <span className="text-blue-400">✓ Auth System: Admin session verified (admin@adarsh.com)</span>
-              <span className="text-[10px] text-slate-500">3 mins ago</span>
-            </div>
+          <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+            <span className="text-blue-400">✓ Auth System: Admin session verified (admin@adarsh.com)</span>
+            <span className="text-[10px] text-slate-500">3 mins ago</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+            <span className="text-emerald-400">✓ Database Sync: Clean user match state verified</span>
+            <span className="text-[10px] text-slate-500">5 mins ago</span>
           </div>
         </div>
       </div>
