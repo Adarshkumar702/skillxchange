@@ -53,11 +53,18 @@ export default function DiscoverPage() {
     return deletedUserSet.has(name) || deletedUserSet.has(email) || deletedUserSet.has(id);
   };
 
-  // Seed user identifiers (Seed accounts MUST NEVER be marked as verified)
-  const seedUserIdentifiers = new Set([
-    'sarah chen', 'alex morgan', 'david kumar', 'david.kumar@example.com', 'deep', 'sardar', 'hardik pandya',
-    'usr_sarah_119d6c', 'usr_alex_332b8e', 'usr_deep_712e4b', 'usr_sardar_441a9d', 'usr_hardik_903f2c',
-    'sarah.chen@stanford.edu', 'alex.morgan@stanford.edu', 'alex@example.com', 'sarah@example.com', 'david@example.com'
+  // Registered real users list (VERIFIED)
+  const registeredUserIdentifiers = new Set([
+    'hardik pandya', 'deep', 'sardar', 'adarsh', 'adarsh kumar',
+    'usr_hardik_903f2c', 'usr_deep_712e4b', 'usr_sardar_441a9d',
+    'hardik@paruluniversity.edu', 'hardik@student.edu', 'deep@stanford.edu', 'sardar@stanford.edu', 'admin@adarsh.com'
+  ]);
+
+  // Seed sample profiles list (SAMPLE PROFILE)
+  const seedSampleIdentifiers = new Set([
+    'sarah chen', 'alex morgan', 'david kumar',
+    'usr_sarah_119d6c', 'usr_alex_332b8e', 'usr_david_445c9a',
+    'sarah.chen@stanford.edu', 'alex.morgan@stanford.edu', 'alex@example.com', 'sarah@example.com', 'david@example.com', 'david.kumar@example.com'
   ]);
 
   const isUserVerified = (usr: any) => {
@@ -66,10 +73,17 @@ export default function DiscoverPage() {
     const email = (usr.email || '').toLowerCase().trim();
     const id = (usr.id || '').toLowerCase().trim();
 
-    if (seedUserIdentifiers.has(name) || seedUserIdentifiers.has(email) || seedUserIdentifiers.has(id)) {
+    // Explicit seed sample accounts are ALWAYS Sample Profile
+    if (seedSampleIdentifiers.has(name) || seedSampleIdentifiers.has(email) || seedSampleIdentifiers.has(id)) {
       return false;
     }
 
+    // Explicit registered real users (Hardik, Deep, Sardar, Adarsh, etc.)
+    if (registeredUserIdentifiers.has(name) || registeredUserIdentifiers.has(email) || registeredUserIdentifiers.has(id)) {
+      return true;
+    }
+
+    // Any registered real user
     return usr.isVerified === true || usr.userBadge === 'VERIFIED' || usr.isRealUser === true;
   };
 
@@ -112,8 +126,68 @@ export default function DiscoverPage() {
   const matches = matchesRes?.data || [];
   const categories = categoriesRes?.data || [];
 
-  // Default Candidates Fallback for Discover Matches Section (Sample Profiles)
+  // Default Candidates Fallback for Discover Matches Section
   const defaultMatches = [
+    {
+      user: {
+        id: 'usr_hardik_903f2c',
+        fullName: 'Hardik Pandya',
+        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Hardik',
+        university: 'Parul University',
+        course: 'Computer Science',
+        graduationYear: 2026,
+        reputationScore: 4.95,
+        completedExchanges: 18,
+        isVerified: true,
+        isRealUser: true,
+        userBadge: 'VERIFIED',
+        bio: 'Competitive Programmer & Full Stack developer.',
+        teachingSkills: [{ id: 'sk_dsa_404', name: 'Data Structures & C++', proficiency: 'Advanced' }],
+        learningSkills: [{ id: 'sk_sys_505', name: 'System Design', proficiency: 'Intermediate' }],
+      },
+      matchScore: 98,
+      compatibilityScore: 98,
+    },
+    {
+      user: {
+        id: 'usr_deep_712e4b',
+        fullName: 'Deep',
+        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Deep',
+        university: 'Stanford University',
+        course: 'Computer Science',
+        graduationYear: 2026,
+        reputationScore: 4.75,
+        completedExchanges: 8,
+        isVerified: true,
+        isRealUser: true,
+        userBadge: 'VERIFIED',
+        bio: 'Backend Specialist in Node.js, Express, and PostgreSQL.',
+        teachingSkills: [{ id: 'sk_node_606', name: 'Node.js & Postgres', proficiency: 'Advanced' }],
+        learningSkills: [{ id: 'sk_ui_707', name: 'UI/UX Design', proficiency: 'Beginner' }],
+      },
+      matchScore: 95,
+      compatibilityScore: 95,
+    },
+    {
+      user: {
+        id: 'usr_sardar_441a9d',
+        fullName: 'Sardar',
+        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sardar',
+        university: 'Stanford University',
+        course: 'Cybersecurity',
+        graduationYear: 2025,
+        reputationScore: 4.85,
+        completedExchanges: 12,
+        isVerified: true,
+        isRealUser: true,
+        userBadge: 'VERIFIED',
+        bio: 'Cybersecurity student teaching Web Security & Ethical Hacking.',
+        teachingSkills: [{ id: 'sk_sec_808', name: 'Web Security & Linux', proficiency: 'Advanced' }],
+        learningSkills: [{ id: 'sk_python_202', name: 'Python Scripts', proficiency: 'Intermediate' }],
+      },
+      matchScore: 92,
+      compatibilityScore: 92,
+    },
     {
       user: {
         id: 'usr_sarah_119d6c',
@@ -125,12 +199,14 @@ export default function DiscoverPage() {
         reputationScore: 4.9,
         completedExchanges: 14,
         isVerified: false,
+        isRealUser: false,
+        userBadge: 'SAMPLE_EXAMPLE',
         bio: 'Data Science senior passionate about Machine Learning, Python, and SQL.',
         teachingSkills: [{ id: 'sk_python_202', name: 'Python & Pandas', proficiency: 'Advanced' }],
         learningSkills: [{ id: 'sk_react_101', name: 'React.js', proficiency: 'Beginner' }],
       },
-      matchScore: 98,
-      compatibilityScore: 98,
+      matchScore: 90,
+      compatibilityScore: 90,
     },
     {
       user: {
@@ -143,12 +219,14 @@ export default function DiscoverPage() {
         reputationScore: 4.8,
         completedExchanges: 11,
         isVerified: false,
+        isRealUser: false,
+        userBadge: 'SAMPLE_EXAMPLE',
         bio: 'Full Stack enthusiast specializing in React, TypeScript, and Node.js.',
         teachingSkills: [{ id: 'sk_react_101', name: 'React.js & Next.js', proficiency: 'Advanced' }],
         learningSkills: [{ id: 'sk_docker_303', name: 'Docker & DevOps', proficiency: 'Beginner' }],
       },
-      matchScore: 92,
-      compatibilityScore: 92,
+      matchScore: 89,
+      compatibilityScore: 89,
     },
     {
       user: {
@@ -161,63 +239,11 @@ export default function DiscoverPage() {
         reputationScore: 4.85,
         completedExchanges: 15,
         isVerified: false,
+        isRealUser: false,
+        userBadge: 'SAMPLE_EXAMPLE',
         bio: 'Backend Architecture, System Design, and Microservices developer.',
         teachingSkills: [{ id: 'sk_sys_505', name: 'System Design & Distributed Systems', proficiency: 'Advanced' }],
         learningSkills: [{ id: 'sk_python_202', name: 'Python', proficiency: 'Beginner' }],
-      },
-      matchScore: 94,
-      compatibilityScore: 94,
-    },
-    {
-      user: {
-        id: 'usr_hardik_903f2c',
-        fullName: 'Hardik Pandya',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Hardik',
-        university: 'Parul University',
-        course: 'Computer Science',
-        graduationYear: 2026,
-        reputationScore: 4.95,
-        completedExchanges: 18,
-        isVerified: false,
-        bio: 'Competitive Programmer & Full Stack developer.',
-        teachingSkills: [{ id: 'sk_dsa_404', name: 'Data Structures & C++', proficiency: 'Advanced' }],
-        learningSkills: [{ id: 'sk_sys_505', name: 'System Design', proficiency: 'Intermediate' }],
-      },
-      matchScore: 95,
-      compatibilityScore: 95,
-    },
-    {
-      user: {
-        id: 'usr_deep_712e4b',
-        fullName: 'Deep',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Deep',
-        university: 'Stanford University',
-        course: 'Computer Science',
-        graduationYear: 2026,
-        reputationScore: 4.75,
-        completedExchanges: 8,
-        isVerified: false,
-        bio: 'Backend Specialist in Node.js, Express, and PostgreSQL.',
-        teachingSkills: [{ id: 'sk_node_606', name: 'Node.js & Postgres', proficiency: 'Advanced' }],
-        learningSkills: [{ id: 'sk_ui_707', name: 'UI/UX Design', proficiency: 'Beginner' }],
-      },
-      matchScore: 89,
-      compatibilityScore: 89,
-    },
-    {
-      user: {
-        id: 'usr_sardar_441a9d',
-        fullName: 'Sardar',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sardar',
-        university: 'Stanford University',
-        course: 'Cybersecurity',
-        graduationYear: 2025,
-        reputationScore: 4.85,
-        completedExchanges: 12,
-        isVerified: false,
-        bio: 'Cybersecurity student teaching Web Security & Ethical Hacking.',
-        teachingSkills: [{ id: 'sk_sec_808', name: 'Web Security & Linux', proficiency: 'Advanced' }],
-        learningSkills: [{ id: 'sk_python_202', name: 'Python Scripts', proficiency: 'Intermediate' }],
       },
       matchScore: 88,
       compatibilityScore: 88,

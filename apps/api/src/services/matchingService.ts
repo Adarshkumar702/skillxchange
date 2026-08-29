@@ -107,10 +107,17 @@ export class MatchingService {
       candidates = candidates.filter((c) => (c.profile?.reputationScore || 0) >= filters.minRating!);
     }
 
-    // Seed User Identifiers (Must NEVER be marked as verified)
-    const seedUserIdentifiers = new Set([
-      'sarah chen', 'alex morgan', 'david kumar', 'deep', 'sardar', 'hardik pandya',
-      'usr_sarah_119d6c', 'usr_alex_332b8e', 'usr_deep_712e4b', 'usr_sardar_441a9d', 'usr_hardik_903f2c',
+    // Registered real users list (VERIFIED)
+    const registeredUserIdentifiers = new Set([
+      'hardik pandya', 'deep', 'sardar', 'adarsh', 'adarsh kumar',
+      'usr_hardik_903f2c', 'usr_deep_712e4b', 'usr_sardar_441a9d',
+      'hardik@paruluniversity.edu', 'hardik@student.edu', 'deep@stanford.edu', 'sardar@stanford.edu', 'admin@adarsh.com'
+    ]);
+
+    // Seed sample profiles list (SAMPLE PROFILE)
+    const seedSampleIdentifiers = new Set([
+      'sarah chen', 'alex morgan', 'david kumar',
+      'usr_sarah_119d6c', 'usr_alex_332b8e', 'usr_david_445c9a',
       'sarah.chen@stanford.edu', 'alex.morgan@stanford.edu', 'alex@example.com', 'sarah@example.com', 'david@example.com', 'david.kumar@example.com'
     ]);
 
@@ -119,8 +126,11 @@ export class MatchingService {
       const cleanName = (c.profile?.fullName || '').trim().toLowerCase();
       const cleanId = (c.id || '').trim().toLowerCase();
 
-      if (seedUserIdentifiers.has(cleanEmail) || seedUserIdentifiers.has(cleanName) || seedUserIdentifiers.has(cleanId)) {
+      if (seedSampleIdentifiers.has(cleanEmail) || seedSampleIdentifiers.has(cleanName) || seedSampleIdentifiers.has(cleanId)) {
         return false;
+      }
+      if (registeredUserIdentifiers.has(cleanEmail) || registeredUserIdentifiers.has(cleanName) || registeredUserIdentifiers.has(cleanId)) {
+        return true;
       }
       return c.isVerified === true;
     };
@@ -155,7 +165,7 @@ export class MatchingService {
 
       if (isRealUser) {
         matchPoints += 15;
-        explanations.push(`Verified Real Registered Student on SkillXchange.`);
+        explanations.push(`Verified Registered Student on SkillXchange.`);
       }
 
       // Multi-Skill Reciprocal Overlap Calculation
