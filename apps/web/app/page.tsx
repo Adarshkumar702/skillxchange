@@ -14,7 +14,6 @@ import {
   Users,
   Video,
   Star,
-  Award,
   BookOpen,
   Send,
   Zap,
@@ -36,7 +35,7 @@ export default function LandingPage() {
       id: 1,
       number: 'Step 01',
       icon: BookOpen,
-      color: 'text-blue-500 bg-blue-500/10 border-blue-500/30',
+      color: 'text-slate-900 dark:text-white bg-slate-900/10 dark:bg-white/10 border-slate-900/30 dark:border-white/30',
       title: 'Create Profile & Set Your Skills',
       headline: 'Tell us what you can teach and what you want to learn.',
       desc: 'Register your free student account. List skills you feel comfortable teaching (e.g. React, C++, Web Development) and skills you are eager to master (e.g. Python, Docker, System Design).',
@@ -46,7 +45,7 @@ export default function LandingPage() {
       id: 2,
       number: 'Step 02',
       icon: Sparkles,
-      color: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/30',
+      color: 'text-slate-900 dark:text-white bg-slate-900/10 dark:bg-white/10 border-slate-900/30 dark:border-white/30',
       title: 'AI Reciprocal Skill Matching',
       headline: 'Our smart algorithm finds your perfect peer partner.',
       desc: 'SkillXchange matches you with students who have opposite learning needs. For example: You teach Student B React, while Student B teaches you Python! Zero money involved.',
@@ -56,7 +55,7 @@ export default function LandingPage() {
       id: 3,
       number: 'Step 03',
       icon: Send,
-      color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/30',
+      color: 'text-slate-900 dark:text-white bg-slate-900/10 dark:bg-white/10 border-slate-900/30 dark:border-white/30',
       title: 'Send a 1-Click Swap Request',
       headline: 'Connect with verified peers and mentors instantly.',
       desc: 'Browse student profiles, inspect verified badges, university details, and reputation scores. Click "Send Swap Request" to propose a 1-on-1 skill exchange.',
@@ -66,7 +65,7 @@ export default function LandingPage() {
       id: 4,
       number: 'Step 04',
       icon: Video,
-      color: 'text-cyan-500 bg-cyan-500/10 border-cyan-500/30',
+      color: 'text-slate-900 dark:text-white bg-slate-900/10 dark:bg-white/10 border-slate-900/30 dark:border-white/30',
       title: '1-on-1 HD Video & Live Chat',
       headline: 'Learn live in dedicated high-definition video rooms.',
       desc: 'Join direct 1-on-1 HD video call rooms with zero lobby waiting. Use right-side live chat, share screens, review code together, and complete learning milestones.',
@@ -76,7 +75,7 @@ export default function LandingPage() {
       id: 5,
       number: 'Step 05',
       icon: Star,
-      color: 'text-amber-500 bg-amber-500/10 border-amber-500/30',
+      color: 'text-slate-900 dark:text-white bg-slate-900/10 dark:bg-white/10 border-slate-900/30 dark:border-white/30',
       title: 'Peer Ratings & Placement Readiness',
       headline: 'Build reputation, earn badges, and get job-ready.',
       desc: 'After each session, rate your partner. Earn reputation stars, unlock achievement badges, and analyze your placement readiness score for top software developer roles.',
@@ -91,13 +90,13 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="relative pt-16 pb-24 px-6 overflow-hidden">
         <div className="max-w-5xl mx-auto text-center space-y-8 relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-indigo-400 text-xs font-semibold shadow-sm">
-            <Sparkles className="w-3.5 h-3.5" /> Next-Gen AI Skill Swap & Placement Platform
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/10 dark:bg-white/10 border border-slate-900/20 dark:border-white/20 text-slate-900 dark:text-white text-xs font-semibold shadow-sm">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Next-Gen AI Skill Swap & Placement Platform
           </div>
 
-          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
+          <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
             Learn from others. <br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-800 dark:from-indigo-400 dark:via-cyan-300 dark:to-indigo-200">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-950 via-slate-800 to-slate-950 dark:from-white dark:via-slate-200 dark:to-slate-400">
               Teach what you know.
             </span>
           </h1>
@@ -106,24 +105,24 @@ export default function LandingPage() {
             SkillXchange connects students who want to learn with peers ready to teach. Swap skills like React, Python, Docker, and System Design with smart AI matching and real-time guidance.
           </p>
 
-          {/* Action Buttons with Prominent "How it works?" Button */}
+          {/* Action Buttons with Black Theme */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Link href="/register" className="btn-primary px-7 py-3.5 text-base font-semibold flex items-center gap-2 w-full sm:w-auto justify-center shadow-lg">
+            <Link href="/register" className="px-8 py-3.5 text-base font-black rounded-xl bg-slate-950 dark:bg-white text-white dark:text-slate-950 hover:bg-slate-800 dark:hover:bg-slate-100 transition-all flex items-center gap-2 w-full sm:w-auto justify-center shadow-xl">
               Find Your Skill Match <ArrowRight className="w-5 h-5" />
             </Link>
 
-            {/* HOW IT WORKS BUTTON */}
+            {/* HOW IT WORKS BUTTON IN BLACK THEME */}
             <button
               onClick={() => {
                 setShowHowItWorksModal(true);
                 scrollToHowItWorks();
               }}
-              className="px-7 py-3.5 text-base font-bold rounded-xl bg-gradient-to-r from-indigo-500/10 via-blue-500/10 to-emerald-500/10 border-2 border-blue-500/40 text-blue-600 dark:text-indigo-300 hover:border-blue-500 hover:bg-blue-500/20 transition-all w-full sm:w-auto flex items-center justify-center gap-2 shadow-md active:scale-95"
+              className="px-8 py-3.5 text-base font-black rounded-xl bg-slate-900/5 dark:bg-white/10 border-2 border-slate-950 dark:border-slate-300 text-slate-950 dark:text-white hover:bg-slate-950 hover:text-white dark:hover:bg-white dark:hover:text-slate-950 transition-all w-full sm:w-auto flex items-center justify-center gap-2 shadow-md active:scale-95"
             >
-              <HelpCircle className="w-5 h-5 text-blue-500" /> How it works?
+              <HelpCircle className="w-5 h-5" /> How it works?
             </button>
 
-            <Link href="/dashboard/discover" className="px-7 py-3.5 text-base font-semibold rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:border-slate-400 transition-all w-full sm:w-auto text-center shadow-sm">
+            <Link href="/dashboard/discover" className="px-8 py-3.5 text-base font-bold rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-200 hover:border-slate-500 transition-all w-full sm:w-auto text-center shadow-sm">
               Explore Skills
             </Link>
           </div>
@@ -135,15 +134,15 @@ export default function LandingPage() {
               <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">Match Accuracy</p>
             </div>
             <div>
-              <p className="text-2xl font-extrabold text-blue-600 dark:text-cyan-400">1,200+</p>
+              <p className="text-2xl font-extrabold text-slate-900 dark:text-white">1,200+</p>
               <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">Exchanges Completed</p>
             </div>
             <div>
-              <p className="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400">50+</p>
+              <p className="text-2xl font-extrabold text-slate-900 dark:text-white">50+</p>
               <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">Tech Skills Available</p>
             </div>
             <div>
-              <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">4.9/5.0</p>
+              <p className="text-2xl font-extrabold text-slate-900 dark:text-white">4.9/5.0</p>
               <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">Peer Rating</p>
             </div>
           </div>
@@ -154,10 +153,10 @@ export default function LandingPage() {
       <section id="how-it-works-section" className="py-20 px-6 bg-slate-200/50 dark:bg-slate-950/60 border-y border-slate-300 dark:border-slate-800">
         <div className="max-w-6xl mx-auto space-y-12">
           <div className="text-center space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider">
-              <Zap className="w-3.5 h-3.5" /> Beginner's Platform Workflow
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/10 dark:bg-white/10 border border-slate-900/20 dark:border-white/20 text-slate-900 dark:text-white text-xs font-bold uppercase tracking-wider">
+              <Zap className="w-3.5 h-3.5 text-amber-500" /> Beginner's Platform Workflow
             </div>
-            <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white">How SkillXchange Works</h2>
+            <h2 className="text-3xl font-black text-slate-900 dark:text-white">How SkillXchange Works</h2>
             <p className="text-sm font-medium text-slate-600 dark:text-slate-400 max-w-xl mx-auto">
               SkillXchange is 100% free. No tuition fees or payments. Exchange your knowledge with peers in 4 simple steps.
             </p>
@@ -170,12 +169,12 @@ export default function LandingPage() {
               { step: '03', title: 'Chat & Sessions', desc: 'Connect live, schedule structured 1-on-1 sessions, and track checklist milestones.' },
               { step: '04', title: 'Rate & Unlock', desc: 'Complete exchanges, earn peer ratings, unlock achievements, and boost placement readiness.' },
             ].map((item) => (
-              <div key={item.step} className="glass-card p-6 rounded-2xl space-y-3 relative overflow-hidden shadow-sm hover:border-blue-500/40 transition-all">
-                <span className="text-4xl font-extrabold text-slate-300 dark:text-indigo-500/20 absolute top-4 right-4">{item.step}</span>
-                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-indigo-400 font-bold text-sm">
+              <div key={item.step} className="glass-card p-6 rounded-2xl space-y-3 relative overflow-hidden shadow-sm hover:border-slate-500 transition-all">
+                <span className="text-4xl font-black text-slate-400 dark:text-slate-800 absolute top-4 right-4">{item.step}</span>
+                <div className="w-10 h-10 rounded-xl bg-slate-950 dark:bg-white text-white dark:text-slate-950 flex items-center justify-center font-black text-sm">
                   {item.step}
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">{item.title}</h3>
+                <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">{item.title}</h3>
                 <p className="text-xs font-medium text-slate-600 dark:text-slate-400 leading-relaxed">{item.desc}</p>
               </div>
             ))}
@@ -184,7 +183,7 @@ export default function LandingPage() {
           <div className="text-center pt-4">
             <button
               onClick={() => setShowHowItWorksModal(true)}
-              className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg inline-flex items-center gap-2 transition-all transform active:scale-95"
+              className="px-6 py-3.5 rounded-xl bg-slate-950 dark:bg-white text-white dark:text-slate-950 font-black text-xs shadow-lg inline-flex items-center gap-2 transition-all transform active:scale-95 hover:bg-slate-800 dark:hover:bg-slate-100"
             >
               <HelpCircle className="w-4 h-4" /> Open Full Interactive "How It Works" Guide
             </button>
@@ -196,40 +195,40 @@ export default function LandingPage() {
       <section className="py-20 px-6 max-w-6xl mx-auto space-y-12 w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <div className="space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-cyan-400 text-xs font-semibold">
-              <Target className="w-3.5 h-3.5" /> Career Boost Feature
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/10 dark:bg-white/10 border border-slate-900/20 dark:border-white/20 text-slate-900 dark:text-white text-xs font-bold">
+              <Target className="w-3.5 h-3.5 text-amber-500" /> Career Boost Feature
             </div>
-            <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white">Placement Readiness & Skill Gap Analyzer</h2>
+            <h2 className="text-3xl font-black text-slate-900 dark:text-white">Placement Readiness & Skill Gap Analyzer</h2>
             <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed font-medium">
               Target top software engineer and full-stack developer roles. SkillXchange analyzes your current skill set against industry requirements, calculating your readiness score and recommending mentors to fill missing gaps.
             </p>
             <div className="space-y-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-              <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Dynamic DSA & System Design Radar Scores</div>
-              <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Automated 30-Day Personalized Learning Roadmaps</div>
-              <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Direct connection to student mentors for missing skills</div>
+              <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Dynamic DSA & System Design Radar Scores</div>
+              <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Automated 30-Day Personalized Learning Roadmaps</div>
+              <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Direct connection to student mentors for missing skills</div>
             </div>
-            <Link href="/register" className="inline-block btn-primary text-sm">
+            <Link href="/register" className="inline-block px-6 py-3 rounded-xl bg-slate-950 dark:bg-white text-white dark:text-slate-950 text-xs font-black shadow-md">
               Check Your Placement Score
             </Link>
           </div>
 
-          <div className="glass-panel p-6 rounded-2xl space-y-4 border border-slate-300 dark:border-surfaceBorder shadow-xl">
-            <div className="flex justify-between items-center border-b border-slate-300 dark:border-surfaceBorder pb-3">
+          <div className="glass-panel p-6 rounded-2xl space-y-4 border border-slate-300 dark:border-slate-800 shadow-xl">
+            <div className="flex justify-between items-center border-b border-slate-300 dark:border-slate-800 pb-3">
               <span className="text-sm font-bold text-slate-900 dark:text-white">Target Role: Full Stack Developer</span>
               <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">79% Ready</span>
             </div>
             <div className="space-y-3">
               <div>
-                <div className="flex justify-between text-xs font-semibold mb-1"><span className="text-slate-700 dark:text-slate-300">DSA & Algorithms</span><span className="text-indigo-600 dark:text-indigo-400 font-bold">75%</span></div>
-                <div className="w-full h-2.5 bg-slate-200 dark:bg-surfaceBorder rounded-full overflow-hidden"><div className="h-full bg-indigo-600 dark:bg-indigo-500" style={{ width: '75%' }} /></div>
+                <div className="flex justify-between text-xs font-semibold mb-1"><span className="text-slate-700 dark:text-slate-300">DSA & Algorithms</span><span className="text-slate-900 dark:text-white font-bold">75%</span></div>
+                <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-slate-950 dark:bg-white" style={{ width: '75%' }} /></div>
               </div>
               <div>
-                <div className="flex justify-between text-xs font-semibold mb-1"><span className="text-slate-700 dark:text-slate-300">Tech Stack (React/Node)</span><span className="text-blue-600 dark:text-cyan-400 font-bold">90%</span></div>
-                <div className="w-full h-2.5 bg-slate-200 dark:bg-surfaceBorder rounded-full overflow-hidden"><div className="h-full bg-blue-600 dark:bg-cyan-400" style={{ width: '90%' }} /></div>
+                <div className="flex justify-between text-xs font-semibold mb-1"><span className="text-slate-700 dark:text-slate-300">Tech Stack (React/Node)</span><span className="text-slate-900 dark:text-white font-bold">90%</span></div>
+                <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-slate-950 dark:bg-white" style={{ width: '90%' }} /></div>
               </div>
               <div>
-                <div className="flex justify-between text-xs font-semibold mb-1"><span className="text-slate-700 dark:text-slate-300">System Design</span><span className="text-amber-600 dark:text-amber-400 font-bold">65%</span></div>
-                <div className="w-full h-2.5 bg-slate-200 dark:bg-surfaceBorder rounded-full overflow-hidden"><div className="h-full bg-amber-500" style={{ width: '65%' }} /></div>
+                <div className="flex justify-between text-xs font-semibold mb-1"><span className="text-slate-700 dark:text-slate-300">System Design</span><span className="text-slate-900 dark:text-white font-bold">65%</span></div>
+                <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-slate-950 dark:bg-white" style={{ width: '65%' }} /></div>
               </div>
             </div>
           </div>
@@ -237,25 +236,25 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-6 bg-slate-900 text-white border-t border-slate-800 text-center">
+      <section className="py-16 px-6 bg-slate-950 text-white border-t border-slate-900 text-center">
         <div className="max-w-3xl mx-auto space-y-6">
-          <h2 className="text-3xl font-extrabold text-white">Ready to elevate your developer career?</h2>
+          <h2 className="text-3xl font-black text-white">Ready to elevate your developer career?</h2>
           <p className="text-slate-300 text-sm">Join hundreds of students exchanging skills today.</p>
-          <Link href="/register" className="btn-primary px-8 py-3 text-sm font-semibold inline-flex items-center gap-2 bg-white text-slate-900 hover:bg-slate-100">
+          <Link href="/register" className="px-8 py-3 text-sm font-black inline-flex items-center gap-2 bg-white text-slate-950 hover:bg-slate-100 rounded-xl shadow-lg">
             Create Free Account <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </section>
 
-      {/* INTERACTIVE "HOW IT WORKS" BEGINNER GUIDE MODAL */}
+      {/* INTERACTIVE "HOW IT WORKS" BEGINNER GUIDE MODAL IN BLACK THEME */}
       {showHowItWorksModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-950 border-2 border-blue-500/40 p-6 sm:p-8 rounded-3xl max-w-3xl w-full space-y-6 shadow-2xl relative animate-in fade-in zoom-in-95 overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-950 border-2 border-slate-800 p-6 sm:p-8 rounded-3xl max-w-3xl w-full space-y-6 shadow-2xl relative animate-in fade-in zoom-in-95 overflow-hidden">
             {/* Header */}
             <div className="flex items-start justify-between border-b border-slate-800 pb-5">
               <div className="space-y-1">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 font-bold text-xs border border-blue-500/30 uppercase tracking-widest">
-                  <HelpCircle className="w-4 h-4 text-blue-400" /> Platform Walkthrough Guide
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white font-bold text-xs border border-white/20 uppercase tracking-widest">
+                  <HelpCircle className="w-4 h-4 text-amber-400" /> Platform Walkthrough Guide
                 </div>
                 <h3 className="text-xl sm:text-2xl font-black text-white pt-1">
                   How SkillXchange Works (Beginner's Guide)
@@ -284,7 +283,7 @@ export default function LandingPage() {
                     onClick={() => setActiveStepTab(step.id)}
                     className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 flex-shrink-0 border ${
                       isActive
-                        ? 'bg-blue-600 text-white border-blue-500 shadow-md'
+                        ? 'bg-white text-slate-950 border-white shadow-md'
                         : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
                     }`}
                   >
@@ -307,7 +306,7 @@ export default function LandingPage() {
                       <IconComponent className="w-6 h-6" />
                     </div>
                     <div>
-                      <span className="text-[10px] font-black uppercase text-blue-400 tracking-wider">
+                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">
                         {currentStep.number} of 05
                       </span>
                       <h4 className="text-base sm:text-lg font-black text-white">{currentStep.title}</h4>
@@ -342,7 +341,7 @@ export default function LandingPage() {
                 <Link
                   href="/register"
                   onClick={() => setShowHowItWorksModal(false)}
-                  className="btn-primary px-5 py-2.5 text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg"
+                  className="px-5 py-2.5 rounded-xl bg-white text-slate-950 text-xs font-black flex items-center justify-center gap-2 shadow-lg hover:bg-slate-100"
                 >
                   Start Learning Now <ArrowRight className="w-4 h-4" />
                 </Link>

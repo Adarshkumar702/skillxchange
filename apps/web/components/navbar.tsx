@@ -26,14 +26,14 @@ export function Navbar() {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface border border-surfaceBorder text-xs font-bold text-textMuted hover:text-textMain hover:border-slate-400 transition-all shadow-sm active:scale-95"
               title="Go Back"
             >
-              <ArrowLeft className="w-4 h-4 text-blue-500" />
+              <ArrowLeft className="w-4 h-4 text-slate-900 dark:text-white" />
               <span className="hidden sm:inline">Back</span>
             </button>
           )}
 
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-grey-900 dark:bg-grey-100 flex items-center justify-center shadow-md transition-transform group-hover:scale-105">
-              <Sparkles className="w-4 h-4 text-grey-100 dark:text-grey-900" />
+            <div className="w-9 h-9 rounded-xl bg-slate-950 dark:bg-white flex items-center justify-center shadow-md transition-transform group-hover:scale-105">
+              <Sparkles className="w-4 h-4 text-white dark:text-slate-950" />
             </div>
             <div>
               <span className="font-extrabold text-lg tracking-tight text-textMain">
@@ -52,7 +52,7 @@ export function Navbar() {
             Discover
           </Link>
           <Link href="/dashboard/placement" className="hover:text-textMain transition-colors flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-blue-500" /> Placement Readiness
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Placement Readiness
           </Link>
           <Link href="/dashboard/skill-gap" className="hover:text-textMain transition-colors">
             Skill Gap Analyzer
@@ -102,7 +102,7 @@ export function Navbar() {
               <Link href="/login" className="text-xs font-semibold text-textMuted hover:text-textMain transition-colors">
                 Sign In
               </Link>
-              <Link href="/register" className="btn-primary text-xs flex items-center gap-1.5">
+              <Link href="/register" className="px-4 py-2 rounded-xl bg-slate-950 dark:bg-white text-white dark:text-slate-950 text-xs font-bold flex items-center gap-1.5 shadow-md hover:bg-slate-800 dark:hover:bg-slate-100">
                 Get Started <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </>
