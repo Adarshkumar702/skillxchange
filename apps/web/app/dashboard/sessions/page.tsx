@@ -66,7 +66,7 @@ export default function SessionsPage() {
   };
 
   // Deterministic Direct Room URL generator
-  // Guarantees both users land in exact same room, forces Chat & Participants to RIGHT sidebar, and enables clean panel toggling
+  // Solves camera lock by removing forced video mute flags and allowing seamless camera toggle in browser
   const getDirectRoomUrl = (rawUrlOrSwapId: string) => {
     if (!rawUrlOrSwapId) return '';
     const userName = encodeURIComponent(user?.profile?.fullName || 'Student');
@@ -85,8 +85,6 @@ export default function SessionsPage() {
     const params = [
       'config.prejoinPageEnabled=false',
       'config.enableLobby=false',
-      'config.startWithAudioMuted=false',
-      'config.startWithVideoMuted=false',
       'config.requireDisplayName=false',
       'config.disableDeepLinking=true',
       'config.chat={"position":"right"}',
