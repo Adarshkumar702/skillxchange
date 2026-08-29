@@ -66,7 +66,7 @@ export default function SessionsPage() {
   };
 
   // Deterministic Direct Room URL generator
-  // Guarantees both users land in exact same room, forces Chat to RIGHT side, and enables clean panel toggling
+  // Guarantees both users land in exact same room, forces Chat & Participants to RIGHT sidebar, and enables clean panel toggling
   const getDirectRoomUrl = (rawUrlOrSwapId: string) => {
     if (!rawUrlOrSwapId) return '';
     const userName = encodeURIComponent(user?.profile?.fullName || 'Student');
@@ -90,12 +90,10 @@ export default function SessionsPage() {
       'config.requireDisplayName=false',
       'config.disableDeepLinking=true',
       'config.participantsPane.enabled=true',
-      'interfaceConfig.CHAT_AND_CHATBOX_RIGHT_SIDE=true',
-      'interfaceConfig.SIDE_BAR_CONTAINER_CAN_OVERLAP=true',
       `userInfo.displayName="${userName}"`,
     ].join('&');
 
-    return `https://meet.ffmuc.net/${cleanId}#${params}`;
+    return `https://jitsi.riot.im/${cleanId}#${params}`;
   };
 
   const handleJoinCall = (sess: any) => {
