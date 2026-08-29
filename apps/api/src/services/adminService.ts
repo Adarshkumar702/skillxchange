@@ -141,6 +141,9 @@ export class AdminService {
         details: input.details,
         status: ReportStatus.PENDING,
       },
+      include: {
+        reporter: { select: { id: true, profile: true, email: true } },
+      },
     });
   }
 
@@ -148,13 +151,31 @@ export class AdminService {
     const where: any = {};
     if (status) where.status = status;
 
-    return prisma.report.findMany({
+    const reports = await prisma.report.findMany({
       where,
       include: {
         reporter: { select: { id: true, profile: true, email: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    const populated = await Promise.all(
+      reports.map(async (rep) => {
+        let targetUser = null;
+        if (rep.targetType === 'USER') {
+          targetUser = await prisma.user.findUnique({
+            where: { id: rep.targetId },
+            select: { id: true, email: true, profile: true },
+          });
+        }
+        return {
+          ...rep,
+          targetUser,
+        };
+      })
+    );
+
+    return populated;
   }
 
   public async updateReportStatus(reportId: string, status: ReportStatus, adminNotes?: string) {

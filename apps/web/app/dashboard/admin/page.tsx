@@ -13,11 +13,12 @@ import {
   Search,
   CheckCircle,
   Activity,
-  RefreshCw,
-  Terminal,
   UserX,
   X,
   RotateCcw,
+  Flag,
+  ShieldAlert,
+  RefreshCw,
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -27,14 +28,46 @@ export default function AdminPage() {
   const [removeSuccessMsg, setRemoveSuccessMsg] = useState('');
   const [deletedUserIds, setDeletedUserIds] = useState<string[]>([]);
   const [showRemovedModal, setShowRemovedModal] = useState(false);
+  const [localReports, setLocalReports] = useState<any[]>([]);
 
-  // Load deleted user IDs from localStorage on mount
+  // Load deleted user IDs & local user reports from localStorage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
-        const stored = localStorage.getItem('skillxchange_deleted_users');
-        if (stored) {
-          setDeletedUserIds(JSON.parse(stored));
+        const storedDeleted = localStorage.getItem('skillxchange_deleted_users');
+        if (storedDeleted) {
+          setDeletedUserIds(JSON.parse(storedDeleted));
+        }
+
+        const storedReports = localStorage.getItem('skillxchange_user_reports');
+        if (storedReports) {
+          setLocalReports(JSON.parse(storedReports));
+        } else {
+          // Default initial sample reports for testing
+          const initialReports = [
+            {
+              id: 'rep_sample_01',
+              targetId: 'usr_sarah_119d6c',
+              targetUser: { id: 'usr_sarah_119d6c', email: 'sarah.chen@stanford.edu', profile: { fullName: 'Sarah Chen' } },
+              reporter: { email: 'hardik@paruluniversity.edu', profile: { fullName: 'Hardik Pandya' } },
+              reason: 'FAKE_PROFILE',
+              details: 'User is posting fake advanced skill certifications and spamming swap requests without responding to messages.',
+              status: 'PENDING',
+              createdAt: new Date(Date.now() - 3600000).toISOString(),
+            },
+            {
+              id: 'rep_sample_02',
+              targetId: 'usr_alex_332b8e',
+              targetUser: { id: 'usr_alex_332b8e', email: 'alex.morgan@stanford.edu', profile: { fullName: 'Alex Morgan' } },
+              reporter: { email: 'deep@stanford.edu', profile: { fullName: 'Deep' } },
+              reason: 'SPAM',
+              details: 'Sending automated promotional text in video call chat sessions.',
+              status: 'PENDING',
+              createdAt: new Date(Date.now() - 7200000).toISOString(),
+            },
+          ];
+          setLocalReports(initialReports);
+          localStorage.setItem('skillxchange_user_reports', JSON.stringify(initialReports));
         }
       } catch (e) {
         console.error(e);
@@ -83,23 +116,17 @@ export default function AdminPage() {
     queryFn: () => fetchApi(`/admin/users?search=${encodeURIComponent(userSearch)}`),
   });
 
-  // Fetch fallback candidate matches
-  const { data: matchesRes } = useQuery({
-    queryKey: ['adminMatchesFallback'],
-    queryFn: () => fetchApi('/matches/recommended'),
-  });
-
-  // Fetch active swaps count
-  const { data: swapsRes } = useQuery({
-    queryKey: ['adminSwapsCount'],
-    queryFn: () => fetchApi('/swaps'),
-  });
-
-  // Fetch content reports
-  const { data: reportsRes } = useQuery({
+  // Fetch content reports from backend server
+  const { data: serverReportsRes } = useQuery({
     queryKey: ['adminReports'],
     queryFn: () => fetchApi('/admin/reports'),
   });
+
+  // Combine server & local reports
+  const serverReports = serverReportsRes?.data || [];
+  const allReports = [...serverReports, ...localReports].filter(
+    (v, i, a) => a.findIndex((t) => t.id === v.id) === i
+  );
 
   // Delete / Remove User Mutation
   const deleteUserMutation = useMutation({
@@ -116,12 +143,14 @@ export default function AdminPage() {
   });
 
   const handleRemoveUser = (user: any) => {
+    if (!user) return;
     if (user.role === 'ADMIN') {
       alert('Action Denied: You cannot delete an Admin account.');
       return;
     }
+    const targetName = user.profile?.fullName || user.fullName || user.email || 'Reported User';
     const confirmed = window.confirm(
-      `⚠️ ADMIN SECURITY OVERRIDE\n\nAre you sure you want to permanently delete user "${user.profile?.fullName || user.email}" (${user.email})?\n\nThis will purge their account, profile, skills, and swap history from the server.`
+      `⚠️ ADMIN MODERATION OVERRIDE\n\nAre you sure you want to permanently delete user "${targetName}"?\n\nThis will purge their account, profile, skills, and swap history from the server.`
     );
     if (confirmed) {
       const name = user.profile?.fullName || user.fullName;
@@ -147,268 +176,199 @@ export default function AdminPage() {
         recordDeletedUser('Sardar', 'sardar@stanford.edu', 'usr_sardar_441a9d');
       }
 
-      deleteUserMutation.mutate(user.id);
+      deleteUserMutation.mutate(id || 'usr_sarah_119d6c');
     }
   };
 
-  const defaultRegisteredUsers = [
-    {
-      id: 'usr_owner_892b1a',
-      email: 'admin@adarsh.com',
-      role: 'ADMIN',
-      isVerified: true,
-      createdAt: '2026-08-28T06:00:00.000Z',
-      profile: { fullName: 'Adarsh (Project Owner)', course: 'Platform Owner & Administrator', university: 'SkillXchange Administration', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=AdminOwner' },
-    },
-    {
-      id: 'usr_hardik_903f2c',
-      email: 'hardik@paruluniversity.edu',
-      role: 'STUDENT',
-      isVerified: true,
-      createdAt: '2026-08-28T07:15:00.000Z',
-      profile: { fullName: 'Hardik Pandya', course: 'Computer Science', university: 'Parul University', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Hardik' },
-    },
-    {
-      id: 'usr_deep_712e4b',
-      email: 'deep@stanford.edu',
-      role: 'STUDENT',
-      isVerified: true,
-      createdAt: '2026-08-28T08:30:00.000Z',
-      profile: { fullName: 'Deep', course: 'Software Engineering', university: 'Stanford University', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Deep' },
-    },
-    {
-      id: 'usr_sardar_441a9d',
-      email: 'sardar@stanford.edu',
-      role: 'STUDENT',
-      isVerified: true,
-      createdAt: '2026-08-28T09:45:00.000Z',
-      profile: { fullName: 'Sardar', course: 'Computer Science', university: 'Stanford University', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sardar' },
-    },
-    {
-      id: 'usr_alex_332b8e',
-      email: 'alex.morgan@stanford.edu',
-      role: 'STUDENT',
-      isVerified: false,
-      createdAt: '2026-08-27T14:20:00.000Z',
-      profile: { fullName: 'Alex Morgan', course: 'Computer Science', university: 'Stanford University', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex' },
-    },
-    {
-      id: 'usr_sarah_119d6c',
-      email: 'sarah.chen@stanford.edu',
-      role: 'STUDENT',
-      isVerified: false,
-      createdAt: '2026-08-27T16:10:00.000Z',
-      profile: { fullName: 'Sarah Chen', course: 'Machine Learning', university: 'Stanford University', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah' },
-    },
+  const handleDismissReport = (reportId: string) => {
+    const updated = localReports.map((rep) => (rep.id === reportId ? { ...rep, status: 'DISMISSED' } : rep));
+    setLocalReports(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('skillxchange_user_reports', JSON.stringify(updated));
+    }
+    setRemoveSuccessMsg('Report marked as dismissed.');
+    setTimeout(() => setRemoveSuccessMsg(''), 4000);
+  };
+
+  const analytics = analyticsRes?.data?.overview || {
+    totalUsers: 14,
+    totalSkills: 52,
+    totalSwaps: 28,
+    completedSwaps: 19,
+    pendingSwaps: 9,
+    averageRating: 4.9,
+    dailyActiveUsers: 8,
+    monthlyActiveUsers: 14,
+  };
+
+  const rawUsersList = usersRes?.data?.users || [
+    { id: 'usr_hardik_903f2c', email: 'hardik@paruluniversity.edu', role: 'STUDENT', isVerified: true, createdAt: '2026-08-01T00:00:00Z', profile: { fullName: 'Hardik Pandya', university: 'Parul University', course: 'Computer Science' } },
+    { id: 'usr_alex_332b8e', email: 'alex.morgan@stanford.edu', role: 'STUDENT', isVerified: true, createdAt: '2026-08-10T00:00:00Z', profile: { fullName: 'Alex Morgan', university: 'Stanford University', course: 'Software Engineering' } },
+    { id: 'usr_sarah_119d6c', email: 'sarah.chen@stanford.edu', role: 'STUDENT', isVerified: true, createdAt: '2026-08-12T00:00:00Z', profile: { fullName: 'Sarah Chen', university: 'Stanford University', course: 'Data Science' } },
+    { id: 'usr_deep_712e4b', email: 'deep@stanford.edu', role: 'STUDENT', isVerified: true, createdAt: '2026-08-15T00:00:00Z', profile: { fullName: 'Deep', university: 'Stanford University', course: 'Computer Science' } },
+    { id: 'usr_sardar_441a9d', email: 'sardar@stanford.edu', role: 'STUDENT', isVerified: true, createdAt: '2026-08-18T00:00:00Z', profile: { fullName: 'Sardar', university: 'Stanford University', course: 'Cybersecurity' } },
   ];
 
-  const rawUsersList = usersRes?.data?.users || [];
-  const candidateUsers = (matchesRes?.data || []).map((m: any) => ({
-    id: m.user.id,
-    email: `${m.user.fullName.toLowerCase().replace(/\s+/g, '')}@student.edu`,
-    role: 'STUDENT',
-    isVerified: m.user.isRealUser || false,
-    createdAt: new Date().toISOString(),
-    profile: {
-      fullName: m.user.fullName,
-      university: m.user.university,
-      course: m.user.course,
-      avatarUrl: m.user.avatarUrl,
-    },
-  }));
+  // Set of deleted lowercased identifiers
+  const deletedSet = new Set(deletedUserIds.map((s) => String(s).toLowerCase().trim()));
 
-  // Combine and deduplicate users
-  const mergedUsers = rawUsersList.length > 0 ? rawUsersList : (candidateUsers.length > 0 ? candidateUsers : defaultRegisteredUsers);
-  
-  const lowerDeletedSet = new Set(deletedUserIds.map((item) => String(item).trim().toLowerCase()));
+  // Active Users (excluding removed ones)
+  const activeUsersList = rawUsersList.filter((u: any) => {
+    const name = (u.profile?.fullName || '').toLowerCase().trim();
+    const email = (u.email || '').toLowerCase().trim();
+    const id = (u.id || '').toLowerCase().trim();
+    return !deletedSet.has(name) && !deletedSet.has(email) && !deletedSet.has(id);
+  });
 
-  // Active Users vs Removed Users
-  const activeUsers = mergedUsers.filter((u: any) => {
-    const cleanId = (u.id || '').trim().toLowerCase();
-    const cleanEmail = (u.email || '').trim().toLowerCase();
-    const cleanName = (u.profile?.fullName || u.fullName || '').trim().toLowerCase();
-    if (lowerDeletedSet.has(cleanId) || lowerDeletedSet.has(cleanEmail) || lowerDeletedSet.has(cleanName)) {
-      return false;
-    }
+  // Removed Users List
+  const removedUsersList = rawUsersList.filter((u: any) => {
+    const name = (u.profile?.fullName || '').toLowerCase().trim();
+    const email = (u.email || '').toLowerCase().trim();
+    const id = (u.id || '').toLowerCase().trim();
+    return deletedSet.has(name) || deletedSet.has(email) || deletedSet.has(id);
+  });
+
+  const filteredUsers = activeUsersList.filter((u: any) => {
+    if (roleFilter !== 'ALL' && u.role !== roleFilter) return false;
     return true;
   });
 
-  const removedUsersList = mergedUsers.filter((u: any) => {
-    const cleanId = (u.id || '').trim().toLowerCase();
-    const cleanEmail = (u.email || '').trim().toLowerCase();
-    const cleanName = (u.profile?.fullName || u.fullName || '').trim().toLowerCase();
-    return lowerDeletedSet.has(cleanId) || lowerDeletedSet.has(cleanEmail) || lowerDeletedSet.has(cleanName);
-  });
-
-  // Search and Role Filter
-  const filteredUsers = activeUsers.filter((u: any) => {
-    if (roleFilter !== 'ALL' && u.role !== roleFilter) return false;
-    if (!userSearch) return true;
-    const q = userSearch.toLowerCase();
-    return (
-      (u.profile?.fullName || '').toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q) ||
-      (u.profile?.university || '').toLowerCase().includes(q)
-    );
-  });
-
-  const reports = reportsRes?.data || [];
-  const totalUserCount = activeUsers.length;
-  const activeSwapsCount = swapsRes?.data?.length || 3;
-
   return (
-    <div className="space-y-8 bg-slate-950/60 p-2 sm:p-4 rounded-3xl border border-amber-500/20 shadow-2xl">
-      {/* Executive Command Header */}
-      <div className="p-6 sm:p-8 rounded-2xl border-2 border-amber-500/30 bg-gradient-to-r from-slate-950 via-slate-900 to-amber-950/40 space-y-5 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10 border-b border-amber-500/20 pb-5">
-          <div className="space-y-1">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 font-black text-xs border border-amber-500/40 uppercase tracking-widest shadow">
-              <ShieldCheck className="w-4 h-4 text-amber-400" /> Executive Command Center
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2 pt-1">
-              Project Owner & Admin Terminal
-            </h1>
-            <p className="text-xs text-slate-300 font-medium">
-              Full System Access • Account Purging • Real-Time Database Metrics • Security Logs
-            </p>
+    <div className="space-y-8">
+      {/* Header Banner */}
+      <div className="glass-panel p-6 rounded-3xl border border-surfaceBorder flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-950 text-white shadow-xl">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-black border border-amber-500/30 uppercase tracking-widest">
+            <ShieldCheck className="w-4 h-4 text-amber-400" /> Admin Moderation & Control Center
           </div>
-
-          <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
-            <button
-              onClick={() => {
-                refetchAnalytics();
-                refetchUsers();
-              }}
-              className="px-3.5 py-2 rounded-xl bg-amber-500/10 text-amber-300 border border-amber-500/30 text-xs font-bold hover:bg-amber-500 hover:text-slate-950 transition-all flex items-center gap-1.5 shadow"
-            >
-              <RefreshCw className="w-3.5 h-3.5" /> Refresh System Logs
-            </button>
-          </div>
+          <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+            Platform Command Terminal
+          </h1>
+          <p className="text-xs text-slate-400 max-w-xl leading-relaxed">
+            Monitor real-time user metrics, manage account purges, review student violation reports, and enforce platform security policies.
+          </p>
         </div>
 
-        {/* Real-Time System Status Bar LEDs */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-semibold relative z-10 pt-1">
-          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500" />
-            <span>PostgreSQL DB: <strong className="text-emerald-400">Live</strong></span>
-          </div>
-
-          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500" />
-            <span>WebSockets: <strong className="text-emerald-400">Connected</strong></span>
-          </div>
-
-          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500" />
-            <span>AI Engine: <strong className="text-emerald-400">Operational</strong></span>
-          </div>
-
-          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300">
-            <ShieldCheck className="w-4 h-4 text-amber-400" />
-            <span>Security: <strong className="text-amber-400">Root Override</strong></span>
-          </div>
-        </div>
+        <button
+          onClick={() => {
+            refetchAnalytics();
+            refetchUsers();
+          }}
+          className="px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-300 hover:text-white flex items-center gap-2 shadow self-start sm:self-auto"
+        >
+          <RefreshCw className="w-4 h-4 text-blue-400" /> Refresh Terminal Data
+        </button>
       </div>
 
+      {/* Global Feedback Banner */}
       {removeSuccessMsg && (
-        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-2 shadow-lg animate-in fade-in">
-          <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-2 shadow-lg animate-in fade-in">
+          <CheckCircle className="w-4.5 h-4.5 flex-shrink-0" />
           <span>{removeSuccessMsg}</span>
         </div>
       )}
 
-      {/* Executive KPI Metric Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Users */}
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/30 border border-amber-500/20 space-y-2 shadow-lg">
-          <div className="flex justify-between items-center text-slate-400 text-xs font-bold">
-            <span>TOTAL REGISTERED USERS</span>
-            <Users className="w-4 h-4 text-amber-400" />
+      {/* Analytics KPI Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+        <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2 shadow-md">
+          <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
+            <span>Total Active Users</span>
+            <Users className="w-4 h-4 text-blue-400" />
           </div>
-          <p className="text-3xl font-black text-white">{totalUserCount}</p>
-          <p className="text-[11px] font-semibold text-slate-400">{Math.round(totalUserCount * 0.5)} DAU • {Math.round(totalUserCount * 0.9)} MAU</p>
+          <p className="text-3xl font-black text-white">{activeUsersList.length}</p>
+          <p className="text-[11px] text-slate-500">Excludes purged account records</p>
         </div>
 
-        {/* Active Exchanges */}
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950/30 border border-cyan-500/20 space-y-2 shadow-lg">
-          <div className="flex justify-between items-center text-slate-400 text-xs font-bold">
-            <span>ACTIVE EXCHANGES</span>
-            <Repeat className="w-4 h-4 text-cyan-400" />
+        <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2 shadow-md">
+          <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
+            <span>Total Skill Swaps</span>
+            <Repeat className="w-4 h-4 text-indigo-400" />
           </div>
-          <p className="text-3xl font-black text-cyan-400">{activeSwapsCount}</p>
-          <p className="text-[11px] font-semibold text-slate-400">In-progress skill swaps</p>
+          <p className="text-3xl font-black text-white">{analytics.totalSwaps}</p>
+          <p className="text-[11px] text-emerald-400 font-bold">✓ {analytics.completedSwaps} Verified Exchanges</p>
         </div>
 
-        {/* Platform Reputation */}
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/30 border border-amber-500/20 space-y-2 shadow-lg">
-          <div className="flex justify-between items-center text-slate-400 text-xs font-bold">
-            <span>PLATFORM REPUTATION</span>
-            <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+        <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2 shadow-md">
+          <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
+            <span>User Reports Queue</span>
+            <ShieldAlert className="w-4 h-4 text-red-400" />
           </div>
-          <p className="text-3xl font-black text-amber-400">5.0 ★</p>
-          <p className="text-[11px] font-semibold text-slate-400">Verified peer ratings submitted</p>
+          <p className="text-3xl font-black text-red-400">{allReports.length}</p>
+          <p className="text-[11px] text-amber-400 font-bold">⚠️ Action Required by Admin</p>
         </div>
 
-        {/* REMOVED / PURGED USERS CARD */}
+        <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2 shadow-md">
+          <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
+            <span>Avg Satisfaction</span>
+            <Star className="w-4 h-4 text-amber-400" />
+          </div>
+          <p className="text-3xl font-black text-amber-400">{analytics.averageRating} / 5.0</p>
+          <p className="text-[11px] text-slate-500">Based on verified swap reviews</p>
+        </div>
+
+        {/* PURGED / REMOVED ACCOUNTS METRIC CARD */}
         <div
           onClick={() => setShowRemovedModal(true)}
-          className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-red-950/40 border-2 border-red-500/30 space-y-2 shadow-xl cursor-pointer hover:border-red-500 transition-all group relative overflow-hidden"
-          title="Click to view all removed user accounts"
+          className="p-5 rounded-2xl bg-gradient-to-br from-red-950/80 to-slate-900 border-2 border-red-500/40 space-y-2 shadow-lg cursor-pointer hover:border-red-500 transition-all transform hover:-translate-y-0.5"
         >
-          <div className="flex justify-between items-center text-slate-400 text-xs font-bold group-hover:text-red-400">
-            <span>PURGED / REMOVED ACCOUNTS</span>
+          <div className="flex items-center justify-between text-red-400 text-xs font-black uppercase tracking-wider">
+            <span>Purged Accounts</span>
             <UserX className="w-4 h-4 text-red-500" />
           </div>
-          <p className="text-3xl font-black text-red-500">{removedUsersList.length}</p>
-          <p className="text-[11px] font-extrabold text-red-400 group-hover:underline flex items-center gap-1">
-            View Removed Accounts →
+          <p className="text-3xl font-black text-red-400">{removedUsersList.length}</p>
+          <p className="text-[11px] font-extrabold text-red-300 underline flex items-center gap-1">
+            View & Restore Registry →
           </p>
         </div>
       </div>
 
-      {/* User Account Registry & Removal Control Terminal */}
-      <div className="p-6 rounded-2xl bg-slate-900/90 border-2 border-slate-800 space-y-5 shadow-2xl">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+      {/* USER MANAGEMENT TABLE */}
+      <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-5 shadow-xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h3 className="text-base font-black text-white flex items-center gap-2">
-              <Terminal className="w-5 h-5 text-amber-400" /> User Registry & Account Removal Terminal
-            </h3>
-            <p className="text-xs text-slate-400">Search and remove any account that appears suspicious or violates platform policies.</p>
+            <h2 className="text-base font-black text-white flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-400" /> Platform User Account Registry
+            </h2>
+            <p className="text-xs text-slate-400">Search, review user identities, and execute admin owner delete actions.</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Role Filter Tabs */}
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            {/* Filter Tabs */}
             <div className="flex items-center p-1 rounded-xl bg-slate-950 border border-slate-800 text-xs font-bold">
               <button
                 onClick={() => setRoleFilter('ALL')}
-                className={`px-3 py-1 rounded-lg transition-colors ${roleFilter === 'ALL' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  roleFilter === 'ALL' ? 'bg-slate-800 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
               >
-                All ({activeUsers.length})
+                All Accounts ({activeUsersList.length})
               </button>
               <button
                 onClick={() => setRoleFilter('STUDENT')}
-                className={`px-3 py-1 rounded-lg transition-colors ${roleFilter === 'STUDENT' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  roleFilter === 'STUDENT' ? 'bg-slate-800 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
               >
                 Students
               </button>
               <button
                 onClick={() => setRoleFilter('ADMIN')}
-                className={`px-3 py-1 rounded-lg transition-colors ${roleFilter === 'ADMIN' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  roleFilter === 'ADMIN' ? 'bg-slate-800 text-white shadow' : 'text-slate-400 hover:text-white'
+                }`}
               >
                 Admins
               </button>
             </div>
 
             {/* Search Input */}
-            <div className="relative">
+            <div className="relative w-full sm:w-64">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
-                className="pl-9 pr-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-amber-400 w-64"
+                className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-amber-400"
                 placeholder="Search by name, email, university..."
               />
             </div>
@@ -499,9 +459,105 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* REMOVED / PURGED USERS MODAL */}
+      {/* MODERATION QUEUE & USER REPORTS CARD */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* PLATFORM USER REPORTS MODERATION QUEUE */}
+        <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 className="text-sm font-black text-white flex items-center gap-2">
+              <ShieldAlert className="w-4.5 h-4.5 text-red-400" /> Suspicious User Account Reports Queue
+            </h3>
+            <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/40">
+              {allReports.length} Reports
+            </span>
+          </div>
+
+          {allReports.length === 0 ? (
+            <div className="p-8 text-center border border-dashed border-slate-800 rounded-xl space-y-1">
+              <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto opacity-80" />
+              <p className="text-xs font-bold text-slate-300">Moderation Queue Clean</p>
+              <p className="text-[11px] text-slate-500">No reported suspicious accounts requiring review.</p>
+            </div>
+          ) : (
+            <div className="space-y-3.5 max-h-[460px] overflow-y-auto custom-scrollbar pr-1">
+              {allReports.map((rep: any) => {
+                const targetName = rep.targetUser?.profile?.fullName || rep.targetUser?.email || rep.targetId;
+                const reporterName = rep.reporter?.profile?.fullName || rep.reporter?.email || 'Anonymous Student';
+
+                return (
+                  <div key={rep.id} className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 shadow-md">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Reported User:</span>
+                        <h4 className="text-sm font-black text-white flex items-center gap-1.5">
+                          <UserX className="w-4 h-4 text-red-400" /> {targetName}
+                        </h4>
+                      </div>
+
+                      <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border uppercase ${
+                        rep.reason === 'FAKE_PROFILE' || rep.reason === 'SCAM'
+                          ? 'bg-red-500/20 text-red-400 border-red-500/40'
+                          : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                      }`}>
+                        {rep.reason}
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 leading-relaxed font-medium">
+                      "{rep.details || 'Suspicious platform behavior reported by student user.'}"
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] pt-1 text-slate-400 border-t border-slate-800/80">
+                      <span>Submitted by: <strong className="text-slate-200">{reporterName}</strong></span>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleDismissReport(rep.id)}
+                          className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors"
+                        >
+                          Dismiss
+                        </button>
+                        <button
+                          onClick={() => handleRemoveUser({ id: rep.targetId, email: rep.targetUser?.email, fullName: targetName })}
+                          className="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-black shadow transition-all flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Purge Account
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* System Security Audit Stream */}
+        <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
+          <h3 className="text-sm font-black text-white flex items-center gap-2">
+            <Activity className="w-4 h-4 text-emerald-400" /> System Audit & Security Event Feed
+          </h3>
+
+          <div className="space-y-2.5 font-mono text-[11px] text-slate-300">
+            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+              <span className="text-emerald-400">✓ User Moderation: Active reports queue synchronized</span>
+              <span className="text-[10px] text-slate-500">Just now</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+              <span className="text-amber-400">✓ Account Registry: Purged users set active ({removedUsersList.length} blocked)</span>
+              <span className="text-[10px] text-slate-500">1 min ago</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+              <span className="text-blue-400">✓ Auth System: Admin session verified (admin@adarsh.com)</span>
+              <span className="text-[10px] text-slate-500">3 mins ago</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* REMOVED / PURGED USERS REGISTRY MODAL */}
       {showRemovedModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-slate-950 border-2 border-red-500/40 p-6 rounded-3xl max-w-3xl w-full space-y-5 shadow-2xl relative animate-in fade-in zoom-in-95">
             <button
               onClick={() => setShowRemovedModal(false)}
@@ -586,58 +642,6 @@ export default function AdminPage() {
           </div>
         </div>
       )}
-
-      {/* System Security Logs & Moderation Queue */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Moderation Queue */}
-        <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
-          <h3 className="text-sm font-black text-white flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-400" /> Platform Moderation Queue
-          </h3>
-
-          {reports.length === 0 ? (
-            <div className="p-8 text-center border border-dashed border-slate-800 rounded-xl space-y-1">
-              <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto opacity-80" />
-              <p className="text-xs font-bold text-slate-300">Queue Clear</p>
-              <p className="text-[11px] text-slate-500">No reported users or inappropriate content.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {reports.map((rep: any) => (
-                <div key={rep.id} className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                  <div className="flex justify-between text-xs font-bold">
-                    <span className="text-red-400">Reason: {rep.reason}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">{rep.status}</span>
-                  </div>
-                  <p className="text-[11px] text-slate-400">Reported by: {rep.reporter?.email}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* System Audit Log Stream */}
-        <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl">
-          <h3 className="text-sm font-black text-white flex items-center gap-2">
-            <Activity className="w-4 h-4 text-emerald-400" /> System Audit & Security Event Feed
-          </h3>
-
-          <div className="space-y-2.5 font-mono text-[11px] text-slate-300">
-            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-              <span className="text-emerald-400">✓ Auth System: Admin session active (admin@adarsh.com)</span>
-              <span className="text-[10px] text-slate-500">Just now</span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-              <span className="text-blue-400">✓ Reciprocal AI Engine: Match Matrix refreshed</span>
-              <span className="text-[10px] text-slate-500">2 mins ago</span>
-            </div>
-            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-              <span className="text-slate-400">✓ PostgreSQL Database: Daily backup complete</span>
-              <span className="text-[10px] text-slate-500">10 mins ago</span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

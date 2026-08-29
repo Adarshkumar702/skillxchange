@@ -1,52 +1,50 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchApi } from '../../../lib/apiClient';
-import { useAuth } from '../../../lib/authContext';
 import {
-  Compass,
   Search,
-  Star,
-  GraduationCap,
   Sparkles,
-  CheckCircle,
-  HelpCircle,
   UserCheck,
-  Eye,
-  X,
+  Star,
   Send,
+  SlidersHorizontal,
+  CheckCircle,
+  GraduationCap,
+  AlertCircle,
   Github,
   Linkedin,
-  Share2,
-  UserX,
   AlertTriangle,
+  UserX,
+  Flag,
+  X,
+  ShieldAlert,
 } from 'lucide-react';
 
 export default function DiscoverPage() {
-  const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [universityFilter, setUniversityFilter] = useState('');
-  const [onlyRealUsers, setOnlyRealUsers] = useState(false);
-  const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
+  const queryClient = useQueryClient();
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [minMatchScore, setMinMatchScore] = useState<number>(0);
+  const [swapSuccessMsg, setSwapSuccessMsg] = useState<string>('');
+  const [swapErrorMsg, setSwapErrorMsg] = useState<string>('');
   const [viewStudentModal, setViewStudentModal] = useState<any>(null);
-  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-  const [localDeletedUserIds, setLocalDeletedUserIds] = useState<string[]>([]);
+  const [reportModalUser, setReportModalUser] = useState<any>(null);
+  const [reportReason, setReportReason] = useState<string>('SPAM');
+  const [reportDetails, setReportDetails] = useState<string>('');
+  const [reportSuccessMsg, setReportSuccessMsg] = useState<string>('');
 
-  const [offeredSkillId, setOfferedSkillId] = useState('');
-  const [requestedSkillId, setRequestedSkillId] = useState('');
-  const [swapSending, setSwapSending] = useState(false);
-  const [swapSuccess, setSwapSuccess] = useState('');
-  const [swapError, setSwapError] = useState('');
-  const [copiedLink, setCopiedLink] = useState(false);
+  // Track deleted user identifiers to mark purged users
+  const [deletedUserSet, setDeletedUserSet] = useState<Set<string>>(new Set());
 
-  // Load deleted user IDs from localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
         const stored = localStorage.getItem('skillxchange_deleted_users');
         if (stored) {
-          setLocalDeletedUserIds(JSON.parse(stored));
+          const arr: string[] = JSON.parse(stored);
+          setDeletedUserSet(new Set(arr.map((s) => String(s).toLowerCase().trim())));
         }
       } catch (e) {
         console.error(e);
@@ -54,292 +52,337 @@ export default function DiscoverPage() {
     }
   }, []);
 
-  // Fetch deleted users registry from backend server
-  const { data: serverDeletedUsersRes } = useQuery({
-    queryKey: ['serverDeletedUsersRegistry'],
-    queryFn: () => fetchApi('/admin/deleted-users'),
+  const checkIsRemovedByAdmin = (studentUser: any) => {
+    if (!studentUser) return false;
+    const name = (studentUser.fullName || studentUser.profile?.fullName || '').toLowerCase().trim();
+    const email = (studentUser.email || '').toLowerCase().trim();
+    const id = (studentUser.id || '').toLowerCase().trim();
+
+    return deletedUserSet.has(name) || deletedUserSet.has(email) || deletedUserSet.has(id);
+  };
+
+  // Fetch Recommended Reciprocal Matches
+  const { data: matchesRes, isLoading: isLoadingMatches } = useQuery({
+    queryKey: ['recommendedMatches', selectedCategory, searchQuery],
+    queryFn: () => {
+      let url = '/matches/recommended';
+      const params = new URLSearchParams();
+      if (selectedCategory !== 'ALL') params.append('category', selectedCategory);
+      if (searchQuery) params.append('query', searchQuery);
+      if (params.toString()) url += `?${params.toString()}`;
+      return fetchApi(url);
+    },
   });
 
-  const serverDeletedList: string[] = serverDeletedUsersRes?.data || [];
-  const allDeletedUserIds = Array.from(new Set([...localDeletedUserIds, ...serverDeletedList]));
-  const lowerDeletedSet = new Set(allDeletedUserIds.map((item) => String(item).trim().toLowerCase()));
+  // Fetch Skill Categories
+  const { data: categoriesRes } = useQuery({
+    queryKey: ['skillCategories'],
+    queryFn: () => fetchApi('/skills/categories'),
+  });
 
-  // Robust Normalized Helper to check if a user is removed by Admin
-  const checkIsRemovedByAdmin = (u: any) => {
-    if (!u) return false;
-    if (u.isDeleted === true) return true;
+  // Send Swap Request Mutation
+  const sendSwapMutation = useMutation({
+    mutationFn: (data: { receiverId: string; offeredSkillId: string; requestedSkillId: string; message?: string }) =>
+      fetchApi('/swaps', { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => {
+      setSwapSuccessMsg('Swap request sent successfully! You can track status under "My Swaps".');
+      setSwapErrorMsg('');
+      setViewStudentModal(null);
+      setTimeout(() => setSwapSuccessMsg(''), 5000);
+      queryClient.invalidateQueries({ queryKey: ['userSwaps'] });
+    },
+    onError: (err: any) => {
+      setSwapErrorMsg(err.message || 'Failed to send swap request.');
+      setSwapSuccessMsg('');
+    },
+  });
 
-    const cleanId = (u.id || '').trim().toLowerCase();
-    const cleanEmail = (u.email || '').trim().toLowerCase();
-    const cleanName = (u.fullName || u.profile?.fullName || '').trim().toLowerCase();
+  // Submit Report Mutation
+  const submitReportMutation = useMutation({
+    mutationFn: (data: { targetType: string; targetId: string; reason: string; details: string }) =>
+      fetchApi('/admin/reports', { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: (_, variables) => {
+      setReportSuccessMsg('Report submitted to Admin Moderation Queue. Thank you for keeping SkillXchange safe!');
+      setTimeout(() => setReportSuccessMsg(''), 5000);
 
-    if (cleanId && lowerDeletedSet.has(cleanId)) return true;
-    if (cleanEmail && lowerDeletedSet.has(cleanEmail)) return true;
-    if (cleanName && lowerDeletedSet.has(cleanName)) return true;
+      // Save locally to persist report in localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          const existing = JSON.parse(localStorage.getItem('skillxchange_user_reports') || '[]');
+          const newReport = {
+            id: `rep_${Date.now()}`,
+            targetId: variables.targetId,
+            targetUser: reportModalUser,
+            reason: variables.reason,
+            details: variables.details,
+            status: 'PENDING',
+            createdAt: new Date().toISOString(),
+          };
+          localStorage.setItem('skillxchange_user_reports', JSON.stringify([newReport, ...existing]));
+        } catch (e) {
+          console.error(e);
+        }
+      }
 
-    return false;
-  };
-
-  // Helper to reliably classify Verified User vs Sample Profile
-  const isUserVerified = (u: any) => {
-    if (!u) return false;
-    if (u.isRealUser === true || u.userBadge === 'VERIFIED_STUDENT' || u.isVerified === true) return true;
-    const pureSampleNames = ['Alex Morgan', 'Sarah Chen', 'David Kumar'];
-    if (!pureSampleNames.includes(u.fullName)) return true;
-    return false;
-  };
-
-  // Fetch Recommended Matches
-  const { data: matchesRes, isLoading } = useQuery({
-    queryKey: ['discoverMatches', universityFilter, searchQuery, onlyRealUsers],
-    queryFn: () =>
-      fetchApi(
-        `/matches/recommended?university=${encodeURIComponent(universityFilter)}&search=${encodeURIComponent(
-          searchQuery
-        )}&onlyRealUsers=${onlyRealUsers}`
-      ),
+      setReportModalUser(null);
+      setReportDetails('');
+    },
   });
 
   const matches = matchesRes?.data || [];
+  const categories = categoriesRes?.data || [];
 
-  const handleSendSwap = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedCandidate || !offeredSkillId || !requestedSkillId) return;
+  // Filter matches by minMatchScore
+  const filteredMatches = matches.filter((match: any) => match.matchScore >= minMatchScore);
 
-    if (checkIsRemovedByAdmin(selectedCandidate.user)) {
-      setSwapError('Cannot send swap request: This account was removed by the Admin.');
+  const handleSendSwap = (match: any) => {
+    if (checkIsRemovedByAdmin(match.user)) {
+      alert('Action Denied: This user account has been removed by the Admin.');
       return;
     }
 
-    setSwapSending(true);
-    setSwapError('');
-    setSwapSuccess('');
+    const offeredSkill = match.user.learningSkills?.[0] || match.offeredSkill;
+    const requestedSkill = match.user.teachingSkills?.[0] || match.requestedSkill;
 
-    const res = await fetchApi('/swaps', {
-      method: 'POST',
-      body: JSON.stringify({
-        receiverId: selectedCandidate.user.id,
-        offeredSkillId,
-        requestedSkillId,
-        notes: `Skill Swap Request from ${user?.profile?.fullName || 'peer'}`,
-        message: `Hi ${selectedCandidate.user.fullName}, I would love to exchange skills with you!`,
-      }),
+    sendSwapMutation.mutate({
+      receiverId: match.user.id,
+      offeredSkillId: offeredSkill?.id || 'sk_python_202',
+      requestedSkillId: requestedSkill?.id || 'sk_react_101',
+      message: `Hi ${match.user.fullName}, I noticed our ${match.matchScore}% reciprocal match! Would love to swap skills.`,
     });
-
-    setSwapSending(false);
-
-    if (res.success) {
-      setSwapSuccess('Skill Swap request sent successfully!');
-      setTimeout(() => {
-        setSelectedCandidate(null);
-        setSwapSuccess('');
-      }, 2000);
-    } else {
-      setSwapError(res.message || 'Failed to send swap request');
-    }
   };
 
-  const handleShareProfileLink = () => {
-    if (typeof window !== 'undefined') {
-      const shareUrl = `${window.location.origin}/dashboard/discover`;
-      navigator.clipboard.writeText(shareUrl);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2500);
-    }
+  const handleSubmitReport = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reportModalUser) return;
+    submitReportMutation.mutate({
+      targetType: 'USER',
+      targetId: reportModalUser.id,
+      reason: reportReason,
+      details: reportDetails,
+    });
   };
 
-  const userTeachingSkills = user?.skills?.filter((s: any) => s.type === 'TEACHING') || [];
+  const isUserVerified = (usr: any) => {
+    return usr?.isVerified || usr?.reputationScore > 4.5 || (usr?.teachingSkills && usr.teachingSkills.length > 0);
+  };
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="glass-panel p-6 rounded-2xl border border-surfaceBorder space-y-4 shadow-sm">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-indigo-400 text-xs font-semibold mb-1">
-              <Sparkles className="w-3.5 h-3.5" /> AI Reciprocal Engine
-            </div>
-            <h1 className="text-2xl font-extrabold text-textMain flex items-center gap-2">
-              <Compass className="w-6 h-6 text-blue-500" /> Discover Peers & Mentors
-            </h1>
-            <p className="text-xs text-textMuted">
-              AI computes exact reciprocal skill matches (e.g. Java, C++ ↔ React, TypeScript) across registered peers.
-            </p>
-          </div>
+      {/* Header Banner */}
+      <div className="glass-panel p-6 rounded-2xl border border-surfaceBorder space-y-2">
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+          <Sparkles className="w-4 h-4 text-amber-500" /> AI Reciprocal Matching Engine
+        </div>
+        <h1 className="text-2xl font-black text-textMain">Discover Skill Swap Partners</h1>
+        <p className="text-xs text-textMuted max-w-2xl leading-relaxed">
+          Connect with peers who teach what you want to learn, and want to learn what you teach. 100% free student exchange.
+        </p>
 
-          <button
-            onClick={handleShareProfileLink}
-            className="px-3.5 py-2 rounded-xl bg-surface border border-surfaceBorder text-xs font-bold text-textMain hover:border-blue-500 transition-colors flex items-center gap-1.5 shadow-sm"
-          >
-            <Share2 className="w-4 h-4 text-blue-500" />
-            {copiedLink ? 'Link Copied!' : 'Share My Profile Link'}
-          </button>
+        {/* Global Feedback Banners */}
+        {swapSuccessMsg && (
+          <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-2">
+            <CheckCircle className="w-4.5 h-4.5 flex-shrink-0" />
+            <span>{swapSuccessMsg}</span>
+          </div>
+        )}
+        {reportSuccessMsg && (
+          <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-600 dark:text-blue-400 text-xs font-bold flex items-center gap-2">
+            <CheckCircle className="w-4.5 h-4.5 flex-shrink-0" />
+            <span>{reportSuccessMsg}</span>
+          </div>
+        )}
+        {swapErrorMsg && (
+          <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-bold flex items-center gap-2">
+            <AlertCircle className="w-4.5 h-4.5 flex-shrink-0" />
+            <span>{swapErrorMsg}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Filter & Search Bar */}
+      <div className="glass-panel p-4 rounded-2xl border border-surfaceBorder flex flex-col md:flex-row gap-4 items-center justify-between">
+        {/* Search */}
+        <div className="relative w-full md:w-80">
+          <Search className="w-4 h-4 text-textMuted absolute left-3 top-3" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by skill name, topic, or university..."
+            className="w-full pl-9 pr-4 py-2 rounded-xl bg-surface border border-surfaceBorder text-xs text-textMain focus:outline-none focus:border-slate-500"
+          />
         </div>
 
-        {/* Search & Filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2">
-          {/* Main Name / Email Search Input */}
-          <div className="relative sm:col-span-2">
-            <Search className="w-4 h-4 text-textMuted absolute left-3 top-2.5" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-lg bg-surface border border-surfaceBorder text-xs text-textMain focus:outline-none focus:border-slate-400"
-              placeholder="Search by Name or Email (e.g. Adarsh, Deep, Sardar, Java, React)..."
-            />
-          </div>
-
-          {/* University Filter */}
-          <div className="relative">
-            <GraduationCap className="w-4 h-4 text-textMuted absolute left-3 top-2.5" />
-            <input
-              type="text"
-              value={universityFilter}
-              onChange={(e) => setUniversityFilter(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-lg bg-surface border border-surfaceBorder text-xs text-textMain focus:outline-none focus:border-slate-400"
-              placeholder="Filter by University..."
-            />
-          </div>
-
-          {/* User Type Toggle Filter */}
-          <div className="flex items-center gap-2">
+        {/* Category Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 custom-scrollbar">
+          <button
+            onClick={() => setSelectedCategory('ALL')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex-shrink-0 ${
+              selectedCategory === 'ALL'
+                ? 'bg-slate-950 dark:bg-white text-white dark:text-slate-950 border-slate-950 dark:border-white shadow-sm'
+                : 'bg-surface border-surfaceBorder text-textMuted hover:text-textMain'
+            }`}
+          >
+            All Categories
+          </button>
+          {categories.map((cat: any) => (
             <button
-              onClick={() => setOnlyRealUsers(!onlyRealUsers)}
-              className={`w-full py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
-                onlyRealUsers
-                  ? 'bg-emerald-600 text-white border-emerald-500'
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex-shrink-0 ${
+                selectedCategory === cat.id
+                  ? 'bg-slate-950 dark:bg-white text-white dark:text-slate-950 border-slate-950 dark:border-white shadow-sm'
                   : 'bg-surface border-surfaceBorder text-textMuted hover:text-textMain'
               }`}
             >
-              <UserCheck className="w-3.5 h-3.5" />
-              {onlyRealUsers ? 'Only Real Users' : 'All Profiles'}
+              {cat.name}
             </button>
-          </div>
+          ))}
+        </div>
+
+        {/* Min Match Filter Slider */}
+        <div className="flex items-center gap-2 text-xs text-textMuted w-full md:w-auto justify-end">
+          <SlidersHorizontal className="w-4 h-4 text-slate-500" />
+          <span>Min Match: <strong className="text-textMain font-black">{minMatchScore}%</strong></span>
+          <input
+            type="range"
+            min="0"
+            max="95"
+            step="5"
+            value={minMatchScore}
+            onChange={(e) => setMinMatchScore(Number(e.target.value))}
+            className="w-24 accent-slate-900 dark:accent-white"
+          />
         </div>
       </div>
 
-      {/* Candidate Cards Grid */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="glass-card p-6 rounded-2xl space-y-4 animate-pulse">
-              <div className="w-14 h-14 bg-surfaceBorder rounded-2xl" />
-              <div className="h-4 bg-surfaceBorder rounded w-1/2" />
-              <div className="h-3 bg-surfaceBorder rounded w-3/4" />
-            </div>
-          ))}
-        </div>
-      ) : matches.length === 0 ? (
-        <div className="glass-panel p-12 rounded-2xl text-center space-y-3">
-          <Compass className="w-10 h-10 text-textMuted mx-auto" />
-          <h3 className="text-base font-bold text-textMain">No Peers Found</h3>
-          <p className="text-xs text-textMuted">No user matched your search term "{searchQuery}". Try searching by a different name or email.</p>
+      {/* Student Cards Grid */}
+      {isLoadingMatches ? (
+        <div className="text-xs text-textMuted p-8">Searching compatible student matches...</div>
+      ) : filteredMatches.length === 0 ? (
+        <div className="glass-panel p-12 rounded-2xl text-center space-y-2">
+          <UserCheck className="w-10 h-10 text-textMuted mx-auto" />
+          <h3 className="text-sm font-bold text-textMain">No Compatible Peer Matches Found</h3>
+          <p className="text-xs text-textMuted">Try adjusting your skill search filters or setting min match score to 0%.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {matches.map((match: any) => {
-            const verified = isUserVerified(match.user);
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredMatches.map((match: any) => {
             const isRemoved = checkIsRemovedByAdmin(match.user);
 
             return (
-              <div key={match.user.id} className="glass-card p-6 rounded-2xl space-y-5 flex flex-col justify-between relative overflow-hidden">
+              <div
+                key={match.user.id}
+                className={`glass-card p-5 rounded-2xl border space-y-4 flex flex-col justify-between shadow-sm transition-all ${
+                  isRemoved
+                    ? 'border-red-500/50 bg-red-500/5 opacity-85'
+                    : 'border-surfaceBorder hover:border-slate-500'
+                }`}
+              >
                 <div className="space-y-4">
-                  {/* Header with Avatar & User Type Badge */}
-                  <div className="flex items-start justify-between">
-                    <div
-                      className="flex items-center gap-3.5 cursor-pointer group"
-                      onClick={() => setViewStudentModal(match)}
-                      title="Click to view full student profile"
-                    >
-                      <div className="relative">
-                        <img
-                          src={match.user.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Demo'}
-                          alt="Avatar"
-                          className="w-14 h-14 rounded-2xl border-2 border-slate-300 dark:border-slate-700 shadow-md object-cover group-hover:scale-105 transition-transform"
-                        />
-                        <span className={`w-3.5 h-3.5 border-2 border-surface rounded-full absolute -bottom-1 -right-1 ${isRemoved ? 'bg-red-500' : 'bg-emerald-500'}`} />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-extrabold text-textMain flex items-center gap-1.5 group-hover:text-blue-500 transition-colors">
-                          {match.user.fullName} <Eye className="w-3.5 h-3.5 text-textMuted opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </h3>
-                        <p className="text-[11px] text-textMuted flex items-center gap-1">
-                          <GraduationCap className="w-3.5 h-3.5 text-blue-500" /> {match.user.university}
-                        </p>
-                        
-                        {/* Real User vs Sample Demo vs Removed Badge */}
-                        {isRemoved ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 mt-1 rounded-full bg-red-500/10 text-red-500 border border-red-500/30">
-                            <UserX className="w-3 h-3 text-red-500" /> Account Removed by Admin
-                          </span>
-                        ) : verified ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 mt-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                            <CheckCircle className="w-3 h-3 text-emerald-500" /> Verified User
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 mt-1 rounded-full bg-slate-500/10 text-slate-500 dark:text-slate-400 border border-slate-500/20">
-                            <HelpCircle className="w-3 h-3" /> Sample Profile
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <span className="text-xs font-black px-2.5 py-1 rounded-full bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-sm">
-                      {match.compatibilityScore}%
+                  {/* Top Bar: Match Badge & Status */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-slate-950 dark:bg-white text-white dark:text-slate-950 shadow-sm flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-amber-400" /> {match.matchScore}% Reciprocal Match
                     </span>
+
+                    {isRemoved ? (
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 flex items-center gap-1">
+                        <UserX className="w-3 h-3" /> Account Removed
+                      </span>
+                    ) : isUserVerified(match.user) ? (
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        ✓ Verified Student
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-500 border border-slate-500/20">
+                        Sample Profile
+                      </span>
+                    )}
                   </div>
 
-                  {/* Skills Showcase */}
-                  <div className="space-y-2.5 text-xs">
-                    <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-surfaceBorder space-y-1.5">
-                      <span className="text-[10px] font-bold text-textMuted uppercase tracking-wider block">Teaches:</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {match.user.teachingSkills.map((sk: any) => (
-                          <span key={sk.id} className="px-2.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-textMain text-[11px] font-semibold">
-                            {sk.name} <span className="text-[9px] opacity-70">({sk.proficiency})</span>
+                  {/* Account Removed Warning Banner */}
+                  {isRemoved && (
+                    <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 text-[11px] font-extrabold flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>🚫 Account Removed by Admin</span>
+                    </div>
+                  )}
+
+                  {/* Student Identity */}
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={match.user.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Demo'}
+                      alt="Avatar"
+                      className="w-12 h-12 rounded-xl border border-surfaceBorder object-cover shadow-sm"
+                    />
+                    <div className="overflow-hidden">
+                      <h3 className="text-sm font-black text-textMain truncate flex items-center gap-1">
+                        {match.user.fullName}
+                      </h3>
+                      <p className="text-[11px] text-textMuted truncate flex items-center gap-1">
+                        <GraduationCap className="w-3.5 h-3.5 text-slate-500" /> {match.user.university}
+                      </p>
+                      <div className="flex items-center gap-2 text-[10px] text-textMuted mt-0.5">
+                        <span className="flex items-center gap-0.5 text-amber-500 font-bold">
+                          <Star className="w-3 h-3 fill-amber-400" /> {match.user.reputationScore}
+                        </span>
+                        <span>•</span>
+                        <span>{match.user.completedExchanges || 0} Swaps</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Skills Compatibility Matrix */}
+                  <div className="space-y-2 text-xs pt-1 border-t border-surfaceBorder">
+                    <div>
+                      <span className="text-[10px] font-bold text-textMuted uppercase tracking-wider block mb-1">
+                        Can Teach You:
+                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        {match.user.teachingSkills?.map((sk: any) => (
+                          <span key={sk.id} className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-800 text-textMain text-[11px] font-semibold">
+                            {sk.name} <span className="text-[9px] text-slate-500">({sk.proficiency})</span>
                           </span>
                         ))}
                       </div>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-surfaceBorder space-y-1.5">
-                      <span className="text-[10px] font-bold text-textMuted uppercase tracking-wider block">Wants to Learn:</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {match.user.learningSkills.map((sk: any) => (
-                          <span key={sk.id} className="px-2.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[11px] font-semibold">
+                    <div>
+                      <span className="text-[10px] font-bold text-textMuted uppercase tracking-wider block mb-1">
+                        Wants to Learn:
+                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        {match.user.learningSkills?.map((sk: any) => (
+                          <span key={sk.id} className="px-2 py-0.5 rounded-md bg-slate-900/10 dark:bg-white/10 text-slate-900 dark:text-white border border-slate-900/20 dark:border-white/20 text-[11px] font-semibold">
                             {sk.name}
                           </span>
                         ))}
                       </div>
                     </div>
                   </div>
-
-                  {/* Match Explanations Callout */}
-                  <div className="text-[11px] text-textMain bg-slate-100 dark:bg-slate-900/60 p-3 rounded-xl border border-surfaceBorder leading-relaxed">
-                    💡 {match.explanations[0] || 'Matches your skill exchange goals.'}
-                  </div>
                 </div>
 
-                {/* Footer Buttons */}
-                <div className="pt-4 border-t border-surfaceBorder flex items-center justify-between gap-2">
+                {/* Card Action Bar */}
+                <div className="pt-3 border-t border-surfaceBorder flex items-center justify-between gap-2">
                   <button
                     onClick={() => setViewStudentModal(match)}
-                    className="text-xs font-semibold text-textMuted hover:text-blue-500 transition-colors flex items-center gap-1"
+                    className="text-xs font-bold text-textMuted hover:text-textMain px-2 py-1.5 rounded-lg hover:bg-surface transition-colors"
                   >
-                    <Eye className="w-3.5 h-3.5" /> View Profile
+                    View Profile
                   </button>
 
                   <button
-                    disabled={isRemoved}
-                    onClick={() => {
-                      setSelectedCandidate(match);
-                      setOfferedSkillId(userTeachingSkills[0]?.skillId || match.user.learningSkills[0]?.id || 'PostgreSQL');
-                      setRequestedSkillId(match.user.teachingSkills[0]?.id || 'Java');
-                    }}
-                    className="btn-primary text-xs font-semibold py-2 px-3.5 flex items-center gap-1.5 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                    onClick={() => handleSendSwap(match)}
+                    disabled={sendSwapMutation.isPending || isRemoved}
+                    className={`text-xs font-black px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm transition-all ${
+                      isRemoved
+                        ? 'bg-slate-300 dark:bg-slate-800 text-slate-500 border border-slate-400 cursor-not-allowed opacity-60'
+                        : 'bg-slate-950 dark:bg-white text-white dark:text-slate-950 hover:bg-slate-800 dark:hover:bg-slate-100 active:scale-95'
+                    }`}
                   >
-                    <Send className="w-3.5 h-3.5" /> {isRemoved ? 'Account Removed' : 'Quick Swap Request'}
+                    <Send className="w-3.5 h-3.5" /> Quick Swap Request
                   </button>
                 </div>
               </div>
@@ -348,46 +391,27 @@ export default function DiscoverPage() {
         </div>
       )}
 
-      {/* View Public Student Profile Modal */}
-      {viewStudentModal && (() => {
-        const isRemovedByAdmin = checkIsRemovedByAdmin(viewStudentModal.user);
-        return (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="glass-panel p-6 rounded-2xl border border-surfaceBorder max-w-lg w-full space-y-5 shadow-2xl relative animate-in fade-in zoom-in-95">
-              <button
-                onClick={() => setViewStudentModal(null)}
-                className="absolute top-4 right-4 p-1.5 rounded-lg bg-surface border border-surfaceBorder text-textMuted hover:text-textMain"
-              >
-                <X className="w-4 h-4" />
-              </button>
-
-              {/* Profile Avatar Header & Image Lightbox Trigger */}
-              <div className="flex items-center gap-4 border-b border-surfaceBorder pb-4">
-                <div
-                  className="relative cursor-pointer group"
-                  onClick={() => setLightboxImage(viewStudentModal.user.avatarUrl)}
-                  title="Click image to zoom full preview"
-                >
-                  <img
-                    src={viewStudentModal.user.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Demo'}
-                    alt="Avatar"
-                    className="w-16 h-16 rounded-2xl border-2 border-blue-500 object-cover shadow-lg group-hover:scale-105 transition-transform"
-                  />
-                  <div className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                    <Eye className="w-4 h-4 text-white" />
-                  </div>
-                </div>
-
+      {/* VIEW STUDENT DETAIL MODAL */}
+      {viewStudentModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="glass-panel p-6 rounded-3xl max-w-lg w-full space-y-5 border border-surfaceBorder shadow-2xl relative animate-in fade-in zoom-in-95">
+            <div className="flex justify-between items-start border-b border-surfaceBorder pb-4">
+              <div className="flex items-center gap-3">
+                <img
+                  src={viewStudentModal.user.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Demo'}
+                  alt="Avatar"
+                  className="w-12 h-12 rounded-xl border border-surfaceBorder object-cover"
+                />
                 <div>
                   <h3 className="text-base font-extrabold text-textMain flex items-center gap-2">
                     {viewStudentModal.user.fullName}
-                    {isRemovedByAdmin ? (
+                    {checkIsRemovedByAdmin(viewStudentModal.user) ? (
                       <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-500 border border-red-500/30 flex items-center gap-1">
                         <UserX className="w-3 h-3 text-red-500" /> Account Removed by Admin
                       </span>
                     ) : isUserVerified(viewStudentModal.user) ? (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                        ✓ Verified User
+                        ✓ Verified Student
                       </span>
                     ) : (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-500 border border-slate-500/20">
@@ -396,192 +420,134 @@ export default function DiscoverPage() {
                     )}
                   </h3>
                   <p className="text-xs text-textMuted flex items-center gap-1">
-                    <GraduationCap className="w-3.5 h-3.5 text-blue-500" /> {viewStudentModal.user.university}
+                    <GraduationCap className="w-3.5 h-3.5 text-slate-500" /> {viewStudentModal.user.university}
                   </p>
-                  <p className="text-xs text-textMuted">{viewStudentModal.user.course} ('{viewStudentModal.user.graduationYear % 100})</p>
                 </div>
               </div>
 
-              {/* Admin Removal Alert Banner */}
-              {isRemovedByAdmin && (
-                <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-bold flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                  <span>This user account has been removed by the Admin / Project Owner. Skill swap requests are disabled.</span>
-                </div>
-              )}
+              <button onClick={() => setViewStudentModal(null)} className="p-1 rounded-lg hover:bg-surface text-textMuted">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-              {/* Bio */}
-              <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-surfaceBorder text-xs text-textMain leading-relaxed">
-                {viewStudentModal.user.bio || 'This student has not added a detailed bio description yet.'}
+            {/* Account Removal Alert */}
+            {checkIsRemovedByAdmin(viewStudentModal.user) && (
+              <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-bold flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                <span>This user account has been removed by the Admin. Skill swap requests are disabled.</span>
               </div>
+            )}
 
-              {/* Stats Row */}
-              <div className="grid grid-cols-2 gap-3 text-center text-xs">
-                <div className="p-3 rounded-xl bg-surface border border-surfaceBorder">
-                  <span className="text-textMuted block text-[10px] uppercase font-bold">Reputation Score</span>
-                  <span className="text-sm font-black text-amber-500 flex items-center justify-center gap-1">
-                    <Star className="w-4 h-4 fill-amber-400" /> {viewStudentModal.user.reputationScore}
-                  </span>
-                </div>
-                <div className="p-3 rounded-xl bg-surface border border-surfaceBorder">
-                  <span className="text-textMuted block text-[10px] uppercase font-bold">Completed Exchanges</span>
-                  <span className="text-sm font-black text-blue-500">{viewStudentModal.user.completedExchanges || 0}</span>
-                </div>
-              </div>
+            {/* Bio & Skills */}
+            <div className="p-3 rounded-xl bg-surface border border-surfaceBorder text-xs text-textMain leading-relaxed">
+              {viewStudentModal.user.bio || 'Verified student eager to learn and teach software skills.'}
+            </div>
 
-              {/* Skills Lists */}
-              <div className="space-y-3 text-xs">
-                <div>
-                  <span className="text-[11px] font-bold text-textMuted uppercase tracking-wider block mb-1.5">Teaches:</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {viewStudentModal.user.teachingSkills.map((sk: any) => (
-                      <span key={sk.id} className="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 text-textMain text-xs font-semibold">
-                        {sk.name} <span className="text-[10px] text-blue-500">({sk.proficiency})</span>
-                      </span>
-                    ))}
-                  </div>
-                </div>
+            {/* Modal Action Bar */}
+            <div className="flex items-center justify-between pt-3 border-t border-surfaceBorder">
+              <button
+                onClick={() => {
+                  setReportModalUser(viewStudentModal.user);
+                  setViewStudentModal(null);
+                }}
+                className="px-3.5 py-2 rounded-xl bg-red-500/10 text-red-500 border border-red-500/30 text-xs font-extrabold hover:bg-red-500 hover:text-white transition-all flex items-center gap-1.5 shadow-sm"
+              >
+                <Flag className="w-3.5 h-3.5" /> Report Account
+              </button>
 
-                <div>
-                  <span className="text-[11px] font-bold text-textMuted uppercase tracking-wider block mb-1.5">Wants to Learn:</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {viewStudentModal.user.learningSkills.map((sk: any) => (
-                      <span key={sk.id} className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-semibold">
-                        {sk.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Links */}
-              <div className="flex items-center gap-4 text-xs font-semibold pt-2 border-t border-surfaceBorder">
-                {viewStudentModal.user.githubUrl && (
-                  <a href={viewStudentModal.user.githubUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline">
-                    <Github className="w-3.5 h-3.5" /> GitHub Profile
-                  </a>
-                )}
-                {viewStudentModal.user.linkedinUrl && (
-                  <a href={viewStudentModal.user.linkedinUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-blue-500 hover:underline">
-                    <Linkedin className="w-3.5 h-3.5" /> LinkedIn
-                  </a>
-                )}
-              </div>
-
-              {/* Action Footer */}
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => setViewStudentModal(null)}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold text-textMuted hover:text-textMain"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-textMuted hover:text-textMain"
                 >
                   Close
                 </button>
                 <button
-                  disabled={isRemovedByAdmin}
-                  onClick={() => {
-                    setSelectedCandidate(viewStudentModal);
-                    setOfferedSkillId(userTeachingSkills[0]?.skillId || viewStudentModal.user.learningSkills[0]?.id || 'PostgreSQL');
-                    setRequestedSkillId(viewStudentModal.user.teachingSkills[0]?.id || 'Java');
-                    setViewStudentModal(null);
-                  }}
-                  className="btn-primary text-xs font-semibold px-4 py-2 flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                  disabled={checkIsRemovedByAdmin(viewStudentModal.user)}
+                  onClick={() => handleSendSwap(viewStudentModal)}
+                  className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md ${
+                    checkIsRemovedByAdmin(viewStudentModal.user)
+                      ? 'bg-slate-300 dark:bg-slate-800 text-slate-500 border border-slate-400 cursor-not-allowed opacity-60'
+                      : 'bg-slate-950 dark:bg-white text-white dark:text-slate-950 hover:bg-slate-800 dark:hover:bg-slate-100'
+                  }`}
                 >
-                  <Send className="w-3.5 h-3.5" /> {isRemovedByAdmin ? 'Account Removed by Admin' : 'Send Swap Request'}
+                  <Send className="w-3.5 h-3.5" /> Send Swap Request
                 </button>
               </div>
             </div>
           </div>
-        );
-      })()}
-
-      {/* Profile Photo Lightbox Preview */}
-      {lightboxImage && (
-        <div
-          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 cursor-pointer"
-          onClick={() => setLightboxImage(null)}
-        >
-          <div className="relative max-w-xl max-h-[80vh] flex flex-col items-center gap-3">
-            <img
-              src={lightboxImage}
-              alt="Profile Lightbox"
-              className="max-w-full max-h-[70vh] rounded-2xl shadow-2xl border-4 border-slate-700 object-contain bg-slate-900"
-            />
-            <p className="text-xs font-semibold text-slate-400">Click anywhere to close full photo preview</p>
-          </div>
         </div>
       )}
 
-      {/* Quick Swap Request Modal */}
-      {selectedCandidate && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass-panel p-6 rounded-2xl border border-surfaceBorder max-w-lg w-full space-y-4 shadow-2xl">
-            <h3 className="text-base font-bold text-textMain">
-              Send Swap Request to {selectedCandidate.user.fullName}
-            </h3>
-
-            {swapSuccess && (
-              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" /> {swapSuccess}
+      {/* REPORT SUSPICIOUS ACCOUNT MODAL */}
+      {reportModalUser && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-950 border-2 border-red-500/40 p-6 rounded-3xl max-w-md w-full space-y-5 shadow-2xl relative animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-2.5 text-red-400">
+                <ShieldAlert className="w-6 h-6" />
+                <div>
+                  <h3 className="text-base font-black text-white">Report Suspicious Account</h3>
+                  <p className="text-[11px] text-slate-400">Submits incident to Admin Moderation Queue</p>
+                </div>
               </div>
-            )}
+              <button onClick={() => setReportModalUser(null)} className="p-1 rounded-lg text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-            {swapError && (
-              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-xs">
-                {swapError}
-              </div>
-            )}
+            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-300 flex items-center gap-2">
+              <img
+                src={reportModalUser.avatarUrl || reportModalUser.profile?.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Demo'}
+                alt="Avatar"
+                className="w-7 h-7 rounded-full border border-slate-700 object-cover"
+              />
+              <span>Report Target: <strong className="text-white">{reportModalUser.fullName || reportModalUser.profile?.fullName || reportModalUser.email}</strong></span>
+            </div>
 
-            <form onSubmit={handleSendSwap} className="space-y-4">
+            <form onSubmit={handleSubmitReport} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-textMuted mb-1">Skill You Will Teach</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">Violation Reason</label>
                 <select
-                  required
-                  value={offeredSkillId}
-                  onChange={(e) => setOfferedSkillId(e.target.value)}
-                  className="w-full p-2.5 rounded-lg bg-surface border border-surfaceBorder text-xs text-textMain"
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-white focus:outline-none focus:border-red-500"
                 >
-                  <option value="">-- Choose Your Teaching Skill --</option>
-                  {userTeachingSkills.map((item: any) => (
-                    <option key={item.skillId} value={item.skillId}>{item.skill.name}</option>
-                  ))}
-                  {userTeachingSkills.length === 0 && (
-                    <option value="PostgreSQL">PostgreSQL (Default)</option>
-                  )}
+                  <option value="SPAM">Spam or Unwanted Commercial Advertising</option>
+                  <option value="FAKE_PROFILE">Fake Profile / Impersonation / Misleading Skills</option>
+                  <option value="HARASSMENT">Harassment, Bullying, or Inappropriate Behavior</option>
+                  <option value="SCAM">Scam or Financial Solicitations</option>
+                  <option value="INAPPROPRIATE_CONTENT">Inappropriate Language or Media Content</option>
+                  <option value="OTHER">Other Terms of Service Violation</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-textMuted mb-1">Skill You Want to Learn</label>
-                <select
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">Incident Details / Evidence Description</label>
+                <textarea
                   required
-                  value={requestedSkillId}
-                  onChange={(e) => setRequestedSkillId(e.target.value)}
-                  className="w-full p-2.5 rounded-lg bg-surface border border-surfaceBorder text-xs text-textMain"
-                >
-                  <option value="">-- Choose Partner's Skill --</option>
-                  {selectedCandidate.user.teachingSkills.map((sk: any) => (
-                    <option key={sk.id} value={sk.id}>{sk.name}</option>
-                  ))}
-                  {selectedCandidate.user.teachingSkills.length === 0 && (
-                    <option value="Java">Java (Default)</option>
-                  )}
-                </select>
+                  rows={3}
+                  value={reportDetails}
+                  onChange={(e) => setReportDetails(e.target.value)}
+                  placeholder="Explain why this account is suspicious or violates platform safety guidelines..."
+                  className="w-full p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500 leading-relaxed"
+                />
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setSelectedCandidate(null)}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold text-textMuted hover:text-textMain"
+                  onClick={() => setReportModalUser(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={swapSending}
-                  className="btn-primary text-xs font-semibold px-4 py-2"
+                  disabled={submitReportMutation.isPending}
+                  className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs shadow-lg flex items-center gap-1.5"
                 >
-                  {swapSending ? 'Sending Request...' : 'Send Request'}
+                  <Flag className="w-3.5 h-3.5" /> Submit Report to Admin
                 </button>
               </div>
             </form>
