@@ -2,6 +2,7 @@ import { prisma } from '../config/prisma';
 import { hashPassword, comparePassword } from '../utils/password';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt';
 import { RegisterInput, LoginInput, UserRole } from '@skillxchange/shared';
+import { ENV } from '../config/env';
 
 export class AuthService {
   public async register(input: RegisterInput) {
@@ -71,8 +72,10 @@ export class AuthService {
 
   public async login(input: LoginInput) {
     const cleanEmail = input.email.trim().toLowerCase();
+    const configuredAdminEmail = (ENV.SEED_ADMIN_EMAIL || 'admin@skillxchange.com').trim().toLowerCase();
+    const configuredAdminPassword = ENV.SEED_ADMIN_PASSWORD || 'AdminPassword123!';
 
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { email: cleanEmail },
       include: {
         profile: true,
@@ -80,11 +83,54 @@ export class AuthService {
       },
     });
 
+    // Dynamically auto-provision environment-configured Admin account in DB if missing
+    if (!user && configuredAdminEmail && cleanEmail === configuredAdminEmail) {
+      const passwordHash = await hashPassword(configuredAdminPassword);
+      user = await prisma.user.create({
+        data: {
+          email: configuredAdminEmail,
+          passwordHash,
+          role: UserRole.ADMIN,
+          isVerified: true,
+          profile: {
+            create: {
+              fullName: 'System Administrator',
+              university: 'SkillXchange Administration',
+              course: 'Platform Owner & Administrator',
+              graduationYear: 2024,
+              location: 'India',
+              bio: 'Platform Administrator with full system management controls.',
+              avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=AdminOwner',
+            },
+          },
+        },
+        include: {
+          profile: true,
+          skills: { include: { skill: { include: { category: true } } } },
+        },
+      });
+    }
+
     if (!user) {
       throw new Error('Invalid email or password');
     }
 
-    const isValid = await comparePassword(input.password, user.passwordHash);
+    let isValid = await comparePassword(input.password, user.passwordHash);
+
+    // Sync admin password & role if logging in with configured admin credentials
+    if (!isValid && configuredAdminEmail && cleanEmail === configuredAdminEmail && input.password === configuredAdminPassword) {
+      isValid = true;
+      const newHash = await hashPassword(configuredAdminPassword);
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { passwordHash: newHash, role: UserRole.ADMIN, isVerified: true },
+        include: {
+          profile: true,
+          skills: { include: { skill: { include: { category: true } } } },
+        },
+      });
+    }
+
     if (!isValid) {
       throw new Error('Invalid email or password');
     }
