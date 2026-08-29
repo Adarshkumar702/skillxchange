@@ -80,7 +80,7 @@ export default function AdminLoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-surface border border-surfaceBorder text-sm text-white focus:outline-none focus:border-amber-400 transition-colors"
-                placeholder="admin@school.edu"
+                placeholder="admin@adarsh.com"
               />
             </div>
           </div>

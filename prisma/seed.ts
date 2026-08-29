@@ -15,8 +15,8 @@ async function main() {
   // Clean existing database
   await prisma.$executeRawUnsafe('TRUNCATE TABLE "User", "Profile", "SkillCategory", "Skill", "UserSkill", "SwapRequest", "Conversation", "ConversationMember", "Message", "LearningSession", "LearningProgress", "Rating", "Achievement", "UserAchievement", "Notification", "Report", "CareerRole", "CareerRoleSkill", "AiRecommendation", "PlacementReadiness", "RefreshToken" CASCADE;');
 
-  const seedAdminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@skillxchange.com';
-  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD || 'AdminPassword123!';
+  const seedAdminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@adarsh.com';
+  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD || '1234';
 
   const hashedStudentPassword = await bcrypt.hash('password123', 10);
   const hashedAdminPassword = await bcrypt.hash(seedAdminPassword, 10);
@@ -151,14 +151,14 @@ async function main() {
       isVerified: true,
       profile: {
         create: {
-          fullName: 'System Administrator',
-          university: 'SkillXchange Ops',
-          course: 'Computer Science Administration',
+          fullName: 'Adarsh (Project Owner & Admin)',
+          university: 'SkillXchange Administration',
+          course: 'Platform Owner & Administrator',
           graduationYear: 2024,
-          location: 'San Francisco, CA',
-          bio: 'Platform administrator and community moderator.',
+          location: 'India',
+          bio: 'Project Owner and Administrator with full access control to view and remove accounts.',
           reputationScore: 5.0,
-          avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Admin',
+          avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=AdminOwner',
         },
       },
     },
