@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchApi } from '../../../lib/apiClient';
 import { getSocket } from '../../../lib/socketClient';
 import { useAuth } from '../../../lib/authContext';
-import { Calendar, Plus, Video, Clock, CheckCircle, ExternalLink, ShieldCheck, Lock, Copy, Check } from 'lucide-react';
+import { Calendar, Plus, Video, Clock, CheckCircle, ExternalLink, ShieldCheck, Lock, Copy, Check, Eye, RotateCcw } from 'lucide-react';
 
 export default function SessionsPage() {
   const { user } = useAuth();
@@ -18,6 +18,7 @@ export default function SessionsPage() {
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [customMeetingUrl, setCustomMeetingUrl] = useState('');
   const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
+  const [resetMsg, setResetMsg] = useState<string | null>(null);
 
   // Fetch user sessions
   const { data: sessionsRes, isLoading } = useQuery({
@@ -66,7 +67,7 @@ export default function SessionsPage() {
   };
 
   // Deterministic Direct Room URL generator
-  // Solves camera lock by removing forced video mute flags and allowing seamless camera toggle in browser
+  // Forces disableSelfView=false to revoke hidden self-video preferences
   const getDirectRoomUrl = (rawUrlOrSwapId: string) => {
     if (!rawUrlOrSwapId) return '';
     const userName = encodeURIComponent(user?.profile?.fullName || 'Student');
@@ -87,6 +88,8 @@ export default function SessionsPage() {
       'config.enableLobby=false',
       'config.requireDisplayName=false',
       'config.disableDeepLinking=true',
+      'config.disableSelfView=false',
+      'config.doNotFlipLocalVideo=false',
       'config.chat={"position":"right"}',
       'config.participantsPane={"enabled":true}',
       'config.toolbarButtons=["microphone","camera","desktop","chat","raisehand","participants-pane","tileview","fullscreen","hangup"]',
@@ -117,7 +120,34 @@ export default function SessionsPage() {
       }
     }
 
-    // Open directly in fresh browser tab (prevents X-Frame-Options iframe connection refusal)
+    // Open directly in fresh browser tab
+    window.open(finalUrl, '_blank');
+  };
+
+  // 1-Click Revoke & Unhide Self Video Handler
+  const handleResetSelfView = (sess: any) => {
+    if (typeof window !== 'undefined') {
+      try {
+        // Clear any stored Jitsi self-view hide flags from localStorage/sessionStorage
+        Object.keys(localStorage).forEach((key) => {
+          if (key.includes('jitsi') || key.includes('selfView') || key.includes('video')) {
+            localStorage.removeItem(key);
+          }
+        });
+        Object.keys(sessionStorage).forEach((key) => {
+          if (key.includes('jitsi') || key.includes('selfView') || key.includes('video')) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    setResetMsg('Self-Video Preference Revoked! Re-opening video call with local camera feed visible...');
+    setTimeout(() => setResetMsg(null), 4000);
+
+    const finalUrl = getDirectRoomUrl(sess.meetingUrl || sess.swapRequestId || sess.id) + '&config.disableSelfView=false';
     window.open(finalUrl, '_blank');
   };
 
@@ -150,6 +180,14 @@ export default function SessionsPage() {
           <Plus className="w-4 h-4" /> Schedule New Video Session
         </button>
       </div>
+
+      {/* Global Feedback Banner */}
+      {resetMsg && (
+        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-2 animate-in fade-in shadow-lg">
+          <CheckCircle className="w-4.5 h-4.5 flex-shrink-0" />
+          <span>{resetMsg}</span>
+        </div>
+      )}
 
       {/* Sessions Grid */}
       {isLoading ? (
@@ -218,13 +256,22 @@ export default function SessionsPage() {
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto">
                       {/* Direct Launch Clean Tab Video Call */}
                       <button
                         onClick={() => handleJoinCall(sess)}
-                        className="w-full sm:w-auto btn-primary text-xs font-bold px-4 py-2.5 flex items-center gap-2 justify-center shadow-md hover:scale-[1.02] transition-transform"
+                        className="btn-primary text-xs font-bold px-4 py-2.5 flex items-center gap-2 justify-center shadow-md hover:scale-[1.02] transition-transform"
                       >
                         <Video className="w-4 h-4 text-emerald-400" /> Join Video Call & Ring Partner
+                      </button>
+
+                      {/* 1-Click Revoke Hidden Self-View Button */}
+                      <button
+                        onClick={() => handleResetSelfView(sess)}
+                        className="px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-slate-950 text-xs font-extrabold transition-all flex items-center gap-1.5 shadow-sm"
+                        title="Click to unhide / revoke your self-video PIP camera view if hidden"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> Unhide My Video
                       </button>
 
                       {/* Copy Room Link */}
