@@ -66,7 +66,7 @@ export default function SessionsPage() {
   };
 
   // Deterministic Direct Room URL generator
-  // Explicitly enables Chat and Participants pane in bottom toolbar for seamless right-side drawer toggling
+  // Guarantees both users land in exact same room, forces Chat & Participants to RIGHT sidebar, and enables clean panel toggling
   const getDirectRoomUrl = (rawUrlOrSwapId: string) => {
     if (!rawUrlOrSwapId) return '';
     const userName = encodeURIComponent(user?.profile?.fullName || 'Student');
@@ -89,7 +89,8 @@ export default function SessionsPage() {
       'config.startWithVideoMuted=false',
       'config.requireDisplayName=false',
       'config.disableDeepLinking=true',
-      'config.participantsPane.enabled=true',
+      'config.chat={"position":"right"}',
+      'config.participantsPane={"enabled":true}',
       'config.toolbarButtons=["microphone","camera","desktop","chat","raisehand","participants-pane","tileview","fullscreen","hangup"]',
       `userInfo.displayName="${userName}"`,
     ].join('&');
