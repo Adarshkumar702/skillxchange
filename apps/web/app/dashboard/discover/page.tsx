@@ -53,6 +53,26 @@ export default function DiscoverPage() {
     return deletedUserSet.has(name) || deletedUserSet.has(email) || deletedUserSet.has(id);
   };
 
+  // Seed user identifiers (Seed accounts MUST NEVER be marked as verified)
+  const seedUserIdentifiers = new Set([
+    'sarah chen', 'alex morgan', 'david kumar', 'david.kumar@example.com', 'deep', 'sardar', 'hardik pandya',
+    'usr_sarah_119d6c', 'usr_alex_332b8e', 'usr_deep_712e4b', 'usr_sardar_441a9d', 'usr_hardik_903f2c',
+    'sarah.chen@stanford.edu', 'alex.morgan@stanford.edu', 'alex@example.com', 'sarah@example.com', 'david@example.com'
+  ]);
+
+  const isUserVerified = (usr: any) => {
+    if (!usr) return false;
+    const name = (usr.fullName || usr.profile?.fullName || '').toLowerCase().trim();
+    const email = (usr.email || '').toLowerCase().trim();
+    const id = (usr.id || '').toLowerCase().trim();
+
+    if (seedUserIdentifiers.has(name) || seedUserIdentifiers.has(email) || seedUserIdentifiers.has(id)) {
+      return false;
+    }
+
+    return usr.isVerified === true || usr.userBadge === 'VERIFIED' || usr.isRealUser === true;
+  };
+
   // Fetch Recommended Reciprocal Matches
   const { data: matchesRes, isLoading: isLoadingMatches } = useQuery({
     queryKey: ['recommendedMatches', selectedCategory, searchQuery],
@@ -92,7 +112,7 @@ export default function DiscoverPage() {
   const matches = matchesRes?.data || [];
   const categories = categoriesRes?.data || [];
 
-  // Robust Default Candidates Fallback to guarantee discover matches section displays cleanly
+  // Default Candidates Fallback for Discover Matches Section (Sample Profiles)
   const defaultMatches = [
     {
       user: {
@@ -104,6 +124,7 @@ export default function DiscoverPage() {
         graduationYear: 2026,
         reputationScore: 4.9,
         completedExchanges: 14,
+        isVerified: false,
         bio: 'Data Science senior passionate about Machine Learning, Python, and SQL.',
         teachingSkills: [{ id: 'sk_python_202', name: 'Python & Pandas', proficiency: 'Advanced' }],
         learningSkills: [{ id: 'sk_react_101', name: 'React.js', proficiency: 'Beginner' }],
@@ -121,12 +142,31 @@ export default function DiscoverPage() {
         graduationYear: 2025,
         reputationScore: 4.8,
         completedExchanges: 11,
+        isVerified: false,
         bio: 'Full Stack enthusiast specializing in React, TypeScript, and Node.js.',
         teachingSkills: [{ id: 'sk_react_101', name: 'React.js & Next.js', proficiency: 'Advanced' }],
         learningSkills: [{ id: 'sk_docker_303', name: 'Docker & DevOps', proficiency: 'Beginner' }],
       },
       matchScore: 92,
       compatibilityScore: 92,
+    },
+    {
+      user: {
+        id: 'usr_david_445c9a',
+        fullName: 'David Kumar',
+        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David',
+        university: 'MIT',
+        course: 'Computer Science',
+        graduationYear: 2026,
+        reputationScore: 4.85,
+        completedExchanges: 15,
+        isVerified: false,
+        bio: 'Backend Architecture, System Design, and Microservices developer.',
+        teachingSkills: [{ id: 'sk_sys_505', name: 'System Design & Distributed Systems', proficiency: 'Advanced' }],
+        learningSkills: [{ id: 'sk_python_202', name: 'Python', proficiency: 'Beginner' }],
+      },
+      matchScore: 94,
+      compatibilityScore: 94,
     },
     {
       user: {
@@ -138,6 +178,7 @@ export default function DiscoverPage() {
         graduationYear: 2026,
         reputationScore: 4.95,
         completedExchanges: 18,
+        isVerified: false,
         bio: 'Competitive Programmer & Full Stack developer.',
         teachingSkills: [{ id: 'sk_dsa_404', name: 'Data Structures & C++', proficiency: 'Advanced' }],
         learningSkills: [{ id: 'sk_sys_505', name: 'System Design', proficiency: 'Intermediate' }],
@@ -155,6 +196,7 @@ export default function DiscoverPage() {
         graduationYear: 2026,
         reputationScore: 4.75,
         completedExchanges: 8,
+        isVerified: false,
         bio: 'Backend Specialist in Node.js, Express, and PostgreSQL.',
         teachingSkills: [{ id: 'sk_node_606', name: 'Node.js & Postgres', proficiency: 'Advanced' }],
         learningSkills: [{ id: 'sk_ui_707', name: 'UI/UX Design', proficiency: 'Beginner' }],
@@ -172,6 +214,7 @@ export default function DiscoverPage() {
         graduationYear: 2025,
         reputationScore: 4.85,
         completedExchanges: 12,
+        isVerified: false,
         bio: 'Cybersecurity student teaching Web Security & Ethical Hacking.',
         teachingSkills: [{ id: 'sk_sec_808', name: 'Web Security & Linux', proficiency: 'Advanced' }],
         learningSkills: [{ id: 'sk_python_202', name: 'Python Scripts', proficiency: 'Intermediate' }],
@@ -204,10 +247,6 @@ export default function DiscoverPage() {
       requestedSkillId: requestedSkill?.id || 'sk_react_101',
       message: `Hi ${match.user.fullName}, I noticed our ${match.compatibilityScore || match.matchScore || 90}% reciprocal match! Would love to swap skills.`,
     });
-  };
-
-  const isUserVerified = (usr: any) => {
-    return usr?.isVerified || usr?.reputationScore > 4.5 || (usr?.teachingSkills && usr.teachingSkills.length > 0);
   };
 
   return (
@@ -308,6 +347,7 @@ export default function DiscoverPage() {
           {filteredMatches.map((match: any) => {
             const isRemoved = checkIsRemovedByAdmin(match.user);
             const score = match.compatibilityScore ?? match.matchScore ?? 90;
+            const verified = isUserVerified(match.user);
 
             return (
               <div
@@ -329,9 +369,9 @@ export default function DiscoverPage() {
                       <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 flex items-center gap-1">
                         <UserX className="w-3 h-3" /> Account Removed
                       </span>
-                    ) : isUserVerified(match.user) ? (
-                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                        ✓ Verified Student
+                    ) : verified ? (
+                      <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                        ✓ Verified
                       </span>
                     ) : (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-500 border border-slate-500/20">
@@ -448,8 +488,8 @@ export default function DiscoverPage() {
                         <UserX className="w-3 h-3 text-red-500" /> Account Removed by Admin
                       </span>
                     ) : isUserVerified(viewStudentModal.user) ? (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                        ✓ Verified Student
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                        ✓ Verified
                       </span>
                     ) : (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-500 border border-slate-500/20">

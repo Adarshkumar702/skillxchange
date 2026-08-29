@@ -17,7 +17,7 @@ export interface MatchRecommendation {
     reputationScore: number;
     completedExchanges: number;
     isRealUser: boolean;
-    userBadge: 'VERIFIED_STUDENT' | 'SAMPLE_EXAMPLE';
+    userBadge: 'VERIFIED' | 'SAMPLE_EXAMPLE';
     teachingSkills: Array<{ id: string; name: string; proficiency: string }>;
     learningSkills: Array<{ id: string; name: string; proficiency: string }>;
   };
@@ -107,14 +107,22 @@ export class MatchingService {
       candidates = candidates.filter((c) => (c.profile?.reputationScore || 0) >= filters.minRating!);
     }
 
-    // Pure static placeholder emails that render as Sample Profile
-    const pureSampleEmails = ['alex@example.com', 'sarah@example.com', 'david@example.com'];
+    // Seed User Identifiers (Must NEVER be marked as verified)
+    const seedUserIdentifiers = new Set([
+      'sarah chen', 'alex morgan', 'david kumar', 'deep', 'sardar', 'hardik pandya',
+      'usr_sarah_119d6c', 'usr_alex_332b8e', 'usr_deep_712e4b', 'usr_sardar_441a9d', 'usr_hardik_903f2c',
+      'sarah.chen@stanford.edu', 'alex.morgan@stanford.edu', 'alex@example.com', 'sarah@example.com', 'david@example.com', 'david.kumar@example.com'
+    ]);
 
     const isCandidateRealUser = (c: typeof candidates[0]) => {
-      if (c.isVerified === true) return true;
       const cleanEmail = (c.email || '').trim().toLowerCase();
-      if (!pureSampleEmails.includes(cleanEmail)) return true;
-      return false;
+      const cleanName = (c.profile?.fullName || '').trim().toLowerCase();
+      const cleanId = (c.id || '').trim().toLowerCase();
+
+      if (seedUserIdentifiers.has(cleanEmail) || seedUserIdentifiers.has(cleanName) || seedUserIdentifiers.has(cleanId)) {
+        return false;
+      }
+      return c.isVerified === true;
     };
 
     const realCandidates = candidates.filter((c) => isCandidateRealUser(c));
@@ -134,7 +142,7 @@ export class MatchingService {
       if (!candidate.profile) continue;
 
       const isRealUser = isCandidateRealUser(candidate);
-      const userBadge: 'VERIFIED_STUDENT' | 'SAMPLE_EXAMPLE' = isRealUser ? 'VERIFIED_STUDENT' : 'SAMPLE_EXAMPLE';
+      const userBadge: 'VERIFIED' | 'SAMPLE_EXAMPLE' = isRealUser ? 'VERIFIED' : 'SAMPLE_EXAMPLE';
 
       const candTeaching = candidate.skills.filter((s) => s.type === SkillType.TEACHING);
       const candLearning = candidate.skills.filter((s) => s.type === SkillType.LEARNING);
@@ -147,7 +155,7 @@ export class MatchingService {
 
       if (isRealUser) {
         matchPoints += 15;
-        explanations.push(`Verified Real Student registered on SkillXchange.`);
+        explanations.push(`Verified Real Registered Student on SkillXchange.`);
       }
 
       // Multi-Skill Reciprocal Overlap Calculation
