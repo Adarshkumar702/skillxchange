@@ -66,7 +66,7 @@ export default function SessionsPage() {
   };
 
   // Deterministic Direct Room URL generator
-  // Guarantees both users land in the exact same room, bypasses lobby/waiting room lock, and works on mobile devices
+  // Guarantees both users land in exact same room, opens Chat & Participants in unified RIGHT side drawer, and bypasses lobby lock
   const getDirectRoomUrl = (rawUrlOrSwapId: string) => {
     if (!rawUrlOrSwapId) return '';
     const userName = encodeURIComponent(user?.profile?.fullName || 'Student');
@@ -82,14 +82,19 @@ export default function SessionsPage() {
       cleanId = `SkillXchange_Room_${cleanId}`;
     }
 
-    // Parameters:
-    // config.prejoinPageEnabled=false  -> skip prejoin screen
-    // config.enableLobby=false          -> disable moderator waiting room lock
-    // config.startWithAudioMuted=false  -> auto-start audio
-    // config.startWithVideoMuted=false  -> auto-start video
-    // config.requireDisplayName=false   -> allow immediate entry
-    // config.disableDeepLinking=true    -> prevent mobile browser from forcing app download
-    return `https://meet.ffmuc.net/${cleanId}#config.prejoinPageEnabled=false&config.enableLobby=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.requireDisplayName=false&config.disableDeepLinking=true&userInfo.displayName="${userName}"`;
+    const params = [
+      'config.prejoinPageEnabled=false',
+      'config.enableLobby=false',
+      'config.startWithAudioMuted=false',
+      'config.startWithVideoMuted=false',
+      'config.requireDisplayName=false',
+      'config.disableDeepLinking=true',
+      'config.chat.position="right"',
+      'config.participantsPane.enabled=true',
+      `userInfo.displayName="${userName}"`,
+    ].join('&');
+
+    return `https://meet.ffmuc.net/${cleanId}#${params}`;
   };
 
   const handleJoinCall = (sess: any) => {
@@ -135,7 +140,7 @@ export default function SessionsPage() {
             <Calendar className="w-5 h-5 text-emerald-500" /> 1-on-1 Live Video Teaching Sessions
           </h1>
           <p className="text-xs text-textMuted">
-            Instant HD video rooms for active skill swaps. Both users join the exact same room directly in a fresh tab with zero lobby waiting.
+            Instant HD video rooms for active skill swaps. Both users join the exact same room directly with right-side Chat & Participants panels.
           </p>
         </div>
 
@@ -196,7 +201,7 @@ export default function SessionsPage() {
                       </p>
                     ) : (
                       <p className="flex items-center gap-1.5 text-[11px] text-emerald-500 font-semibold">
-                        <ShieldCheck className="w-3.5 h-3.5" /> Instant Direct Video Room (No Moderator Lock)
+                        <ShieldCheck className="w-3.5 h-3.5" /> Instant Direct Room (Right-side Chat & Users)
                       </p>
                     )}
                   </div>

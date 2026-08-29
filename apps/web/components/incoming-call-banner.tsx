@@ -28,10 +28,10 @@ export function IncomingCallBanner() {
   const handleAcceptCall = () => {
     let url = callData.meetingUrl || '';
 
-    // Guarantee prejoin, lobby, and mobile deep linking bypass parameters
+    // Guarantee prejoin, lobby, mobile deep linking bypass, and right-side panel toggling
     if (url.includes('meet.ffmuc.net') || url.includes('meet.jit.si')) {
       const baseUrl = url.split('#')[0];
-      url = `${baseUrl}#config.prejoinPageEnabled=false&config.enableLobby=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.requireDisplayName=false&config.disableDeepLinking=true`;
+      url = `${baseUrl}#config.prejoinPageEnabled=false&config.enableLobby=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.requireDisplayName=false&config.disableDeepLinking=true&config.chat.position="right"&config.participantsPane.enabled=true`;
     }
 
     window.open(url, '_blank');
