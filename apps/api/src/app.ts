@@ -6,20 +6,13 @@ import rateLimit from 'express-rate-limit';
 import routes from './routes';
 import { globalErrorHandler } from './middleware/errorHandler';
 import { ENV } from './config/env';
+import { corsOptions } from './config/cors';
 
 const app = express();
 
-// Security Middlewares with Robust CORS Header Reflection for Vercel Clients
+// Security Middlewares with Strict Production-Safe CORS
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Reflect the exact incoming origin string back to the browser for credentials/authorization
-      callback(null, origin || true);
-    },
-    credentials: true,
-  })
-);
+app.use(cors(corsOptions));
 
 // Body Parsing & Cookies
 app.use(express.json({ limit: '10mb' }));

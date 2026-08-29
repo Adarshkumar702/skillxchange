@@ -2,15 +2,13 @@ import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import app from './app';
 import { ENV } from './config/env';
+import { socketCorsOptions } from './config/cors';
 import { setupSocketIO } from './sockets/socketHandler';
 
 const server = http.createServer(app);
 
 const io = new SocketIOServer(server, {
-  cors: {
-    origin: [ENV.CLIENT_URL, 'http://localhost:3000', 'http://127.0.0.1:3000'],
-    credentials: true,
-  },
+  cors: socketCorsOptions,
 });
 
 setupSocketIO(io);
