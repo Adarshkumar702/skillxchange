@@ -66,7 +66,7 @@ export default function SessionsPage() {
   };
 
   // Deterministic Direct Room URL generator
-  // Includes settings and overflowmenu inside the meeting toolbar (three dots menu -> Settings -> Show self view)
+  // Forces disableSelfView=false and displayMode="visible" so local camera feed is unhidden by default
   const getDirectRoomUrl = (rawUrlOrSwapId: string) => {
     if (!rawUrlOrSwapId) return '';
     const userName = encodeURIComponent(user?.profile?.fullName || 'Student');
@@ -89,6 +89,9 @@ export default function SessionsPage() {
       'config.disableDeepLinking=true',
       'config.disableSelfView=false',
       'config.doNotFlipLocalVideo=false',
+      'config.selfView.showSelfViewAvatar=true',
+      'config.selfView.displayMode="visible"',
+      'config.filmstrip.disableSelfViewSetting=false',
       'config.chat={"position":"right"}',
       'config.participantsPane={"enabled":true}',
       'config.toolbarButtons=["microphone","camera","desktop","chat","raisehand","participants-pane","tileview","select-background","settings","overflowmenu","fullscreen","hangup"]',

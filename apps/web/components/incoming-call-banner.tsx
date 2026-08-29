@@ -35,7 +35,7 @@ export function IncomingCallBanner() {
 
     if (url.includes('jitsi.riot.im') || url.includes('meet.jit.si')) {
       const baseUrl = url.split('#')[0];
-      url = `${baseUrl}#config.prejoinPageEnabled=false&config.enableLobby=false&config.requireDisplayName=false&config.disableDeepLinking=true&config.disableSelfView=false&config.doNotFlipLocalVideo=false&config.chat={"position":"right"}&config.participantsPane={"enabled":true}&config.toolbarButtons=["microphone","camera","desktop","chat","raisehand","participants-pane","tileview","select-background","settings","fullscreen","hangup"]`;
+      url = `${baseUrl}#config.prejoinPageEnabled=false&config.enableLobby=false&config.requireDisplayName=false&config.disableDeepLinking=true&config.disableSelfView=false&config.doNotFlipLocalVideo=false&config.selfView.showSelfViewAvatar=true&config.selfView.displayMode="visible"&config.filmstrip.disableSelfViewSetting=false&config.chat={"position":"right"}&config.participantsPane={"enabled":true}&config.toolbarButtons=["microphone","camera","desktop","chat","raisehand","participants-pane","tileview","select-background","settings","overflowmenu","fullscreen","hangup"]`;
     }
 
     window.open(url, '_blank');
