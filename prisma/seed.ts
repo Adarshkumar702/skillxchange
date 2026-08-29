@@ -1,3 +1,9 @@
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config();
+
 import { PrismaClient, Role, SkillType, ProficiencyLevel, SwapStatus, TargetRoleImportance } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
@@ -9,8 +15,8 @@ async function main() {
   // Clean existing database
   await prisma.$executeRawUnsafe('TRUNCATE TABLE "User", "Profile", "SkillCategory", "Skill", "UserSkill", "SwapRequest", "Conversation", "ConversationMember", "Message", "LearningSession", "LearningProgress", "Rating", "Achievement", "UserAchievement", "Notification", "Report", "CareerRole", "CareerRoleSkill", "AiRecommendation", "PlacementReadiness", "RefreshToken" CASCADE;');
 
-  const seedAdminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@skillxchange.local';
-  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD || 'ChangeMeInProduction123!';
+  const seedAdminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@skillxchange.com';
+  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD || 'AdminPassword123!';
 
   const hashedStudentPassword = await bcrypt.hash('password123', 10);
   const hashedAdminPassword = await bcrypt.hash(seedAdminPassword, 10);
