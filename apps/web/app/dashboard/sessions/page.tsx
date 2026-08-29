@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchApi } from '../../../lib/apiClient';
 import { getSocket } from '../../../lib/socketClient';
 import { useAuth } from '../../../lib/authContext';
-import { Calendar, Plus, Video, Clock, CheckCircle, ExternalLink, ShieldCheck, Lock, Copy, Check, Eye, RotateCcw } from 'lucide-react';
+import { Calendar, Plus, Video, Clock, CheckCircle, ExternalLink, ShieldCheck, Lock, Copy, Check, Eye, Settings } from 'lucide-react';
 
 export default function SessionsPage() {
   const { user } = useAuth();
@@ -67,7 +67,7 @@ export default function SessionsPage() {
   };
 
   // Deterministic Direct Room URL generator
-  // Forces disableSelfView=false to revoke hidden self-video preferences
+  // Includes settings icon in bottom toolbar so users can unhide/toggle self-view directly inside the meeting
   const getDirectRoomUrl = (rawUrlOrSwapId: string) => {
     if (!rawUrlOrSwapId) return '';
     const userName = encodeURIComponent(user?.profile?.fullName || 'Student');
@@ -92,7 +92,7 @@ export default function SessionsPage() {
       'config.doNotFlipLocalVideo=false',
       'config.chat={"position":"right"}',
       'config.participantsPane={"enabled":true}',
-      'config.toolbarButtons=["microphone","camera","desktop","chat","raisehand","participants-pane","tileview","fullscreen","hangup"]',
+      'config.toolbarButtons=["microphone","camera","desktop","chat","raisehand","participants-pane","tileview","select-background","settings","fullscreen","hangup"]',
       `userInfo.displayName="${userName}"`,
     ].join('&');
 
@@ -188,6 +188,16 @@ export default function SessionsPage() {
           <span>{resetMsg}</span>
         </div>
       )}
+
+      {/* In-Meeting Self View Tip Banner */}
+      <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-600 dark:text-blue-400 text-xs font-bold flex items-center justify-between gap-3 shadow-sm">
+        <div className="flex items-center gap-2">
+          <Settings className="w-4 h-4 flex-shrink-0 text-blue-500" />
+          <span>
+            💡 <strong>Inside Meeting Self-View Tip:</strong> Click the <strong>⚙️ Settings</strong> button or <strong>[...]</strong> menu on the bottom toolbar inside the meeting to unhide / show your self-video anytime!
+          </span>
+        </div>
+      </div>
 
       {/* Sessions Grid */}
       {isLoading ? (

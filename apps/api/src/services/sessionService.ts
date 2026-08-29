@@ -17,7 +17,7 @@ export class SessionService {
 
     // Deterministic room name derived from swapRequestId to guarantee both users join exact same room
     const cleanSwapId = input.swapRequestId.replace(/[^a-zA-Z0-9]/g, '');
-    const defaultMeetingUrl = `https://jitsi.riot.im/SkillXchange_Room_${cleanSwapId}#config.prejoinPageEnabled=false&config.enableLobby=false&config.requireDisplayName=false&config.disableDeepLinking=true&config.disableSelfView=false&config.doNotFlipLocalVideo=false&config.chat={"position":"right"}&config.participantsPane={"enabled":true}&config.toolbarButtons=["microphone","camera","desktop","chat","raisehand","participants-pane","tileview","fullscreen","hangup"]`;
+    const defaultMeetingUrl = `https://jitsi.riot.im/SkillXchange_Room_${cleanSwapId}#config.prejoinPageEnabled=false&config.enableLobby=false&config.requireDisplayName=false&config.disableDeepLinking=true&config.disableSelfView=false&config.doNotFlipLocalVideo=false&config.chat={"position":"right"}&config.participantsPane={"enabled":true}&config.toolbarButtons=["microphone","camera","desktop","chat","raisehand","participants-pane","tileview","select-background","settings","fullscreen","hangup"]`;
 
     const session = await prisma.learningSession.create({
       data: {
