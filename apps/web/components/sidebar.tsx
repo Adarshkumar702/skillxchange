@@ -61,10 +61,10 @@ export function Sidebar() {
   const defaultRegisteredLogs = [
     {
       id: 'usr_owner_892b1a',
-      email: 'admin@adarsh.com',
+      email: 'admin@skillxchange.local',
       role: 'ADMIN',
       createdAt: '2026-08-28T06:00:00.000Z',
-      profile: { fullName: 'Adarsh (Project Owner)', course: 'Admin', university: 'SkillXchange' },
+      profile: { fullName: 'System Administrator', course: 'Admin', university: 'SkillXchange' },
     },
     {
       id: 'usr_hardik_903f2c',

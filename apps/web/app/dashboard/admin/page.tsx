@@ -405,7 +405,7 @@ export default function AdminPage() {
             <span className="text-[10px] text-slate-500">1 min ago</span>
           </div>
           <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-            <span className="text-blue-400">✓ Auth System: Admin session verified (admin@adarsh.com)</span>
+            <span className="text-blue-400">✓ Auth System: Admin session verified and active</span>
             <span className="text-[10px] text-slate-500">3 mins ago</span>
           </div>
           <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">

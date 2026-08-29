@@ -72,7 +72,7 @@ export class AuthService {
   public async login(input: LoginInput) {
     const cleanEmail = input.email.trim().toLowerCase();
 
-    let user = await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { email: cleanEmail },
       include: {
         profile: true,
@@ -80,64 +80,11 @@ export class AuthService {
       },
     });
 
-    // Auto-provision and sync Admin Account (admin@adarsh.com / 1234)
-    if (cleanEmail === 'admin@adarsh.com' || cleanEmail === 'admin@example.com') {
-      const targetPassword = cleanEmail === 'admin@adarsh.com' ? '1234' : 'admin123';
-
-      if (!user) {
-        const passwordHash = await hashPassword(targetPassword);
-        user = await prisma.user.create({
-          data: {
-            email: cleanEmail,
-            passwordHash,
-            role: UserRole.ADMIN,
-            isVerified: true,
-            profile: {
-              create: {
-                fullName: 'Adarsh (Project Owner & Admin)',
-                university: 'SkillXchange Administration',
-                course: 'Platform Owner & Administrator',
-                graduationYear: 2024,
-                location: 'India',
-                bio: 'Project Owner and Administrator with full access control.',
-                avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=AdminOwner',
-              },
-            },
-          },
-          include: {
-            profile: true,
-            skills: { include: { skill: { include: { category: true } } } },
-          },
-        });
-      } else {
-        // Ensure user has ADMIN role & isVerified: true
-        if (user.role !== UserRole.ADMIN) {
-          user = await prisma.user.update({
-            where: { id: user.id },
-            data: { role: UserRole.ADMIN, isVerified: true },
-            include: {
-              profile: true,
-              skills: { include: { skill: { include: { category: true } } } },
-            },
-          });
-        }
-      }
-    }
-
     if (!user) {
       throw new Error('Invalid email or password');
     }
 
-    let isValid = await comparePassword(input.password, user.passwordHash);
-    
-    // Always grant access to admin@adarsh.com with password 1234
-    if (cleanEmail === 'admin@adarsh.com' && input.password === '1234') {
-      isValid = true;
-    }
-    if (cleanEmail === 'admin@example.com' && input.password === 'admin123') {
-      isValid = true;
-    }
-
+    const isValid = await comparePassword(input.password, user.passwordHash);
     if (!isValid) {
       throw new Error('Invalid email or password');
     }

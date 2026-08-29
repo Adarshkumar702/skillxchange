@@ -9,8 +9,11 @@ async function main() {
   // Clean existing database
   await prisma.$executeRawUnsafe('TRUNCATE TABLE "User", "Profile", "SkillCategory", "Skill", "UserSkill", "SwapRequest", "Conversation", "ConversationMember", "Message", "LearningSession", "LearningProgress", "Rating", "Achievement", "UserAchievement", "Notification", "Report", "CareerRole", "CareerRoleSkill", "AiRecommendation", "PlacementReadiness", "RefreshToken" CASCADE;');
 
+  const seedAdminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@skillxchange.local';
+  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD || 'ChangeMeInProduction123!';
+
   const hashedStudentPassword = await bcrypt.hash('password123', 10);
-  const hashedAdminPassword = await bcrypt.hash('admin123', 10);
+  const hashedAdminPassword = await bcrypt.hash(seedAdminPassword, 10);
 
   // 1. Achievements
   console.log('  -> Seeding Achievements...');
@@ -133,10 +136,10 @@ async function main() {
   // 5. Users & Profiles
   console.log('  -> Seeding Users & Demo Accounts...');
 
-  // Admin Account
+  // Environment-driven Admin Account
   const adminUser = await prisma.user.create({
     data: {
-      email: 'admin@example.com',
+      email: seedAdminEmail,
       passwordHash: hashedAdminPassword,
       role: Role.ADMIN,
       isVerified: true,
@@ -166,29 +169,25 @@ async function main() {
         create: {
           fullName: 'Alex Morgan',
           university: 'Stanford University',
-          course: 'Computer Science',
-          graduationYear: 2026,
+          course: 'Software Engineering',
+          graduationYear: 2025,
           location: 'Palo Alto, CA',
-          bio: 'Passionate full-stack developer looking to master Python and Docker while teaching React & TypeScript.',
-          githubUrl: 'https://github.com/alexmorgan',
-          linkedinUrl: 'https://linkedin.com/in/alexmorgan',
-          reputationScore: 4.9,
-          completedExchanges: 4,
+          bio: 'Full stack enthusiast eager to learn Docker & DevOps while teaching React.',
+          reputationScore: 4.8,
           avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
         },
       },
       skills: {
         create: [
-          { skillId: skillsMap['React'], type: SkillType.TEACHING, proficiency: ProficiencyLevel.EXPERT, yearsExperience: 3 },
-          { skillId: skillsMap['TypeScript'], type: SkillType.TEACHING, proficiency: ProficiencyLevel.ADVANCED, yearsExperience: 2 },
-          { skillId: skillsMap['Python'], type: SkillType.LEARNING, proficiency: ProficiencyLevel.BEGINNER, yearsExperience: 0.5 },
-          { skillId: skillsMap['Docker'], type: SkillType.LEARNING, proficiency: ProficiencyLevel.INTERMEDIATE, yearsExperience: 1 },
+          { skillId: skillsMap['React'], type: SkillType.TEACHING, proficiency: ProficiencyLevel.ADVANCED },
+          { skillId: skillsMap['TypeScript'], type: SkillType.TEACHING, proficiency: ProficiencyLevel.INTERMEDIATE },
+          { skillId: skillsMap['Docker'], type: SkillType.LEARNING, proficiency: ProficiencyLevel.BEGINNER },
         ],
       },
     },
   });
 
-  // Candidate Student 1 (Sarah Chen)
+  // Demo Student Account (Sarah Chen)
   const sarahUser = await prisma.user.create({
     data: {
       email: 'sarah.chen@stanford.edu',
@@ -199,103 +198,54 @@ async function main() {
         create: {
           fullName: 'Sarah Chen',
           university: 'Stanford University',
-          course: 'Artificial Intelligence',
+          course: 'Data Science',
           graduationYear: 2026,
-          location: 'Palo Alto, CA',
-          bio: 'AI researcher and Python wizard. Eager to master modern frontend frameworks like React & Next.js.',
-          githubUrl: 'https://github.com/sarahchen',
-          reputationScore: 5.0,
-          completedExchanges: 6,
+          location: 'Stanford, CA',
+          bio: 'Data Science senior passionate about Machine Learning and Python.',
+          reputationScore: 4.9,
           avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
         },
       },
       skills: {
         create: [
-          { skillId: skillsMap['Python'], type: SkillType.TEACHING, proficiency: ProficiencyLevel.EXPERT, yearsExperience: 4 },
-          { skillId: skillsMap['Machine Learning'], type: SkillType.TEACHING, proficiency: ProficiencyLevel.ADVANCED, yearsExperience: 2 },
-          { skillId: skillsMap['React'], type: SkillType.LEARNING, proficiency: ProficiencyLevel.INTERMEDIATE, yearsExperience: 1 },
+          { skillId: skillsMap['Python'], type: SkillType.TEACHING, proficiency: ProficiencyLevel.ADVANCED },
+          { skillId: skillsMap['Machine Learning'], type: SkillType.TEACHING, proficiency: ProficiencyLevel.INTERMEDIATE },
+          { skillId: skillsMap['React'], type: SkillType.LEARNING, proficiency: ProficiencyLevel.BEGINNER },
         ],
       },
     },
   });
 
-  // Candidate Student 2 (David Kumar)
+  // Demo Student Account (David Kumar)
   const davidUser = await prisma.user.create({
     data: {
-      email: 'david.kumar@berkeley.edu',
+      email: 'david.kumar@example.com',
       passwordHash: hashedStudentPassword,
       role: Role.STUDENT,
       isVerified: true,
       profile: {
         create: {
           fullName: 'David Kumar',
-          university: 'UC Berkeley',
-          course: 'Electrical Engineering & CS',
-          graduationYear: 2025,
-          location: 'Berkeley, CA',
-          bio: 'DevOps enthusiast. Love containerizing applications and tuning PostgreSQL databases.',
-          reputationScore: 4.8,
-          completedExchanges: 3,
+          university: 'MIT',
+          course: 'Computer Science',
+          graduationYear: 2026,
+          location: 'Cambridge, MA',
+          bio: 'Backend Architecture & System Design specialist.',
+          reputationScore: 4.85,
           avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David',
         },
       },
       skills: {
         create: [
-          { skillId: skillsMap['Docker'], type: SkillType.TEACHING, proficiency: ProficiencyLevel.EXPERT, yearsExperience: 3 },
-          { skillId: skillsMap['PostgreSQL'], type: SkillType.TEACHING, proficiency: ProficiencyLevel.ADVANCED, yearsExperience: 2 },
-          { skillId: skillsMap['System Design'], type: SkillType.LEARNING, proficiency: ProficiencyLevel.INTERMEDIATE, yearsExperience: 1 },
+          { skillId: skillsMap['System Design'], type: SkillType.TEACHING, proficiency: ProficiencyLevel.ADVANCED },
+          { skillId: skillsMap['PostgreSQL'], type: SkillType.TEACHING, proficiency: ProficiencyLevel.ADVANCED },
+          { skillId: skillsMap['Python'], type: SkillType.LEARNING, proficiency: ProficiencyLevel.BEGINNER },
         ],
       },
     },
   });
 
-  // 6. Initial Swap Request & Conversation between Alex & Sarah
-  console.log('  -> Seeding Swaps, Conversations & Sessions...');
-  const alexSarahSwap = await prisma.swapRequest.create({
-    data: {
-      senderId: alexUser.id,
-      receiverId: sarahUser.id,
-      offeredSkillId: skillsMap['React'],
-      requestedSkillId: skillsMap['Python'],
-      message: 'Hey Sarah! I noticed you teach Python and want to learn React. Let’s do a skill exchange!',
-      status: SwapStatus.ACCEPTED,
-      conversation: {
-        create: {
-          members: {
-            create: [{ userId: alexUser.id }, { userId: sarahUser.id }],
-          },
-          messages: {
-            create: [
-              { senderId: alexUser.id, content: 'Hi Sarah! Excited to get started on Python.' },
-              { senderId: sarahUser.id, content: 'Hey Alex! Awesome, I’m looking forward to diving deep into React hooks.' },
-            ],
-          },
-        },
-      },
-      learningProgress: {
-        create: {
-          percentage: 40.0,
-          sessionsCompleted: 2,
-          totalSessions: 5,
-          notes: 'Covered Python basic syntax and functions. Next session: React state management.',
-        },
-      },
-      learningSessions: {
-        create: [
-          {
-            createdById: alexUser.id,
-            title: 'Python Basics & Data Structures',
-            scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-            durationMinutes: 60,
-            meetingUrl: 'https://meet.jit.si/skillxchange-python-1',
-            status: 'SCHEDULED',
-          },
-        ],
-      },
-    },
-  });
-
-  // 7. Seed Placement Readiness for Alex
+  // 6. Placement Readiness
   console.log('  -> Seeding Placement Readiness...');
   await prisma.placementReadiness.create({
     data: {
@@ -310,8 +260,8 @@ async function main() {
   });
 
   console.log('✅ Seeding completed successfully!');
-  console.log('  👉 Demo Student Account: student@example.com / password123');
-  console.log('  👉 Demo Admin Account:   admin@example.com / admin123');
+  console.log('  👉 Seed Admin Email:', seedAdminEmail);
+  console.log('  👉 Seed Student Email: student@example.com');
 }
 
 main()

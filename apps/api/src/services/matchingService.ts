@@ -111,7 +111,7 @@ export class MatchingService {
     const registeredUserIdentifiers = new Set([
       'hardik pandya', 'deep', 'sardar', 'adarsh', 'adarsh kumar',
       'usr_hardik_903f2c', 'usr_deep_712e4b', 'usr_sardar_441a9d',
-      'hardik@paruluniversity.edu', 'hardik@student.edu', 'deep@stanford.edu', 'sardar@stanford.edu', 'admin@adarsh.com'
+      'hardik@paruluniversity.edu', 'hardik@student.edu', 'deep@stanford.edu', 'sardar@stanford.edu'
     ]);
 
     // Seed sample profiles list (SAMPLE PROFILE)

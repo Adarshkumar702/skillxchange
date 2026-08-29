@@ -23,52 +23,29 @@ export default function AdminLoginPage() {
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = password.trim();
 
-    const res = await fetchApi('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
-    });
+    try {
+      const res = await fetchApi('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
+      });
 
-    setLoading(false);
+      setLoading(false);
 
-    if (res.success && res.data) {
-      if (res.data.user.role !== 'ADMIN') {
-        setError('Access Denied: This portal is reserved for Admin & Project Owner accounts.');
+      if (res.success && res.data) {
+        if (res.data.user.role !== 'ADMIN') {
+          setError('Access Denied: This account does not have Admin privileges.');
+          return;
+        }
+        login(res.data.accessToken, res.data.user);
+        router.push('/dashboard/admin');
         return;
       }
-      login(res.data.accessToken, res.data.user);
-      router.push('/dashboard/admin');
-      return;
-    }
 
-    // Direct Admin Portal Client Fallback for admin@adarsh.com / 1234 & admin@example.com / admin123
-    if (
-      (cleanEmail === 'admin@adarsh.com' && cleanPassword === '1234') ||
-      (cleanEmail === 'admin@example.com' && cleanPassword === 'admin123')
-    ) {
-      const adminUserData = {
-        id: 'admin-owner-id-001',
-        email: cleanEmail,
-        role: 'ADMIN',
-        isVerified: true,
-        profile: {
-          fullName: 'Adarsh (Project Owner & Admin)',
-          university: 'SkillXchange Administration',
-          course: 'Platform Owner & Administrator',
-          graduationYear: 2024,
-          reputationScore: 5.0,
-          completedExchanges: 10,
-          location: 'India',
-          bio: 'Project Owner and Administrator with full access control to view and remove accounts.',
-          avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=AdminOwner',
-        },
-        skills: [],
-      };
-      login('fallback-admin-access-token', adminUserData);
-      router.push('/dashboard/admin');
-      return;
+      setError(res.message || 'Invalid admin credentials');
+    } catch (err: any) {
+      setLoading(false);
+      setError(err.message || 'Failed to authenticate admin credentials');
     }
-
-    setError(res.message || 'Invalid admin credentials');
   };
 
   return (
@@ -103,7 +80,7 @@ export default function AdminLoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-surface border border-surfaceBorder text-sm text-white focus:outline-none focus:border-amber-400 transition-colors"
-                placeholder="admin@adarsh.com"
+                placeholder="admin@school.edu"
               />
             </div>
           </div>
@@ -126,15 +103,16 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 mt-2 shadow-lg transition-all"
+            className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-sm shadow-lg transition-all flex items-center justify-center gap-2"
           >
-            {loading ? 'Authenticating Admin Access...' : 'Sign In to Admin Portal'} <ArrowRight className="w-4 h-4" />
+            {loading ? 'Authenticating...' : 'Sign In to Admin Portal'}
+            <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
-        <div className="pt-4 border-t border-surfaceBorder text-center space-y-2 text-xs">
-          <Link href="/login" className="text-xs font-semibold text-slate-400 hover:text-white transition-colors">
-            ← Return to Student Login
+        <div className="pt-4 border-t border-surfaceBorder text-center">
+          <Link href="/login" className="text-xs font-semibold text-slate-400 hover:text-amber-300 transition-colors">
+            ← Switch to Student Login
           </Link>
         </div>
       </div>
